@@ -36,7 +36,9 @@ func main() {
 	}
 
 	cpu := &CPU{
-		PC:     0x8000,
+		register: &Register{
+			PC: 0x8000,
+		},
 		memory: nil,
 	}
 	// memory map

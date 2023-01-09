@@ -225,6 +225,7 @@ func TestCPU_status(t *testing.T) {
 			},
 		},
 	} {
+		tt.in.debug, tt.out.debug = true, true
 		if tt.in.register == nil {
 			tt.in.register = &Register{}
 		}

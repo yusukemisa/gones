@@ -7,7 +7,23 @@ import (
 
 type CPU struct {
 	register *Register
-	memory   []byte
+	// memory map
+	// Address          Size    Usage
+	// 0x0000～0x07FF	0x0800	WRAM
+	// 0x0800～0x1FFF	-	    WRAMのミラー
+	// 0x2000～0x2007	0x0008	PPU レジスタ
+	// 0x2008～0x3FFF	-	    PPUレジスタのミラー
+	// 0x4000～0x401F	0x0020	APU I/O、PAD
+	// 0x4020～0x5FFF	0x1FE0	拡張ROM
+	// 0x6000～0x7FFF	0x2000	拡張RAM
+	// 0x8000～0xBFFF	0x4000	PRG-ROM
+	// 0xC000～0xFFFF	0x4000	PRG-ROM
+	memory []byte
+
+	ppu *PPU
+
+	// test時は任意のメモリマップにしたい
+	debug bool
 }
 
 type Register struct {
@@ -20,7 +36,6 @@ type Register struct {
 	// CPUはfetch
 	// CPUはfetchでPCのアドレスから命令を読む
 	PC uint16
-	//currentAddress uint16
 
 	// ステータスレジスタ
 	// 条件付きの分岐命令を実行するために演算結果を保持する
@@ -59,7 +74,7 @@ func (c *CPU) run() {
 func (c *CPU) fetch() byte {
 	address := c.register.PC
 	c.register.PC++
-	return c.memory[address]
+	return c.read(address)
 }
 
 func (c *CPU) exec(inst *instruction) {
@@ -87,18 +102,13 @@ func (c *CPU) exec(inst *instruction) {
 			//(IM16+X)番地の値をAにロード
 			l, h := uint16(c.fetch()), uint16(c.fetch())
 			addr := l | h<<8 + uint16(c.register.X)
-			fmt.Printf("A:%#02x\n", c.register.A)
-			c.register.A = c.memory[addr]
-			fmt.Printf("AbsoluteX:%#04x\n", addr)
-			fmt.Printf("A:%#02x\n", c.register.A)
+			c.register.A = c.read(addr)
 		}
 		c.updateStatusRegister(c.register.A)
 	case "STA":
 		if inst.mode == "Absolute" {
 			l, h := uint16(c.fetch()), uint16(c.fetch())
-			//fmt.Printf("%#08b,%#08b\n", l, h)
-			fmt.Printf("aadr=%#04x\n", l|h<<8)
-			c.register.A = c.memory[l|h<<8]
+			c.register.A = c.read(l | h<<8)
 		}
 	case "TXS":
 		c.register.S = c.register.X
@@ -110,8 +120,8 @@ func (c *CPU) exec(inst *instruction) {
 			//fmt.Printf("PC=%#04x,X=%#04x\n", c.PC, uint16(c.X))
 			addr := c.register.PC + uint16(c.register.X)
 			//fmt.Printf("addr=%#04x\n", addr)
-			c.memory[addr] = c.memory[addr] + 1
-			c.updateStatusRegister(c.memory[addr])
+			c.write(addr, c.read(addr)+1)
+			c.updateStatusRegister(c.read(addr))
 		}
 	case "DEY":
 		c.register.Y--
@@ -132,7 +142,14 @@ func (c *CPU) exec(inst *instruction) {
 	fmt.Printf("A:%#02x,X:%#02x,Y:%#02x,PC:%#04x\n", c.register.A, c.register.X, c.register.Y, c.register.PC)
 }
 
-func (c *CPU) readByAddress(address uint16) byte {
+func (c *CPU) write(address uint16, data byte) {
+	c.memory[address] = data
+}
+
+func (c *CPU) read(address uint16) byte {
+	if c.debug {
+		return c.memory[address]
+	}
 	if address < 0x2000 {
 		// 0x0000～0x07FF	0x0800	WRAM
 		// 0x0800～0x1FFF	-	    WRAMのミラー
@@ -140,7 +157,7 @@ func (c *CPU) readByAddress(address uint16) byte {
 	} else if address < 0x4000 {
 		// 0x2000～0x2007	0x0008	PPU レジスタ
 		// 0x2008～0x3FFF	-	    PPUレジスタのミラー
-		return 0
+		return c.ppu.read((address - 0x2000) % 8)
 	}
 	if address >= 0x8000 {
 		return c.memory[address]

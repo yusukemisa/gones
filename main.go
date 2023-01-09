@@ -39,21 +39,11 @@ func main() {
 		register: &Register{
 			PC: 0x8000,
 		},
-		memory: nil,
+		memory: append(make([]byte, 0x8000), PRGROM...),
+		ppu: &PPU{
+			memory: append(CHRROM, make([]byte, 0x2000)...),
+		},
 	}
-	// memory map
-	// Address          Size    Usage
-	// 0x0000～0x07FF	0x0800	WRAM
-	// 0x0800～0x1FFF	-	    WRAMのミラー
-	// 0x2000～0x2007	0x0008	PPU レジスタ
-	// 0x2008～0x3FFF	-	    PPUレジスタのミラー
-	// 0x4000～0x401F	0x0020	APU I/O、PAD
-	// 0x4020～0x5FFF	0x1FE0	拡張ROM
-	// 0x6000～0x7FFF	0x2000	拡張RAM
-	// 0x8000～0xBFFF	0x4000	PRG-ROM
-	// 0xC000～0xFFFF	0x4000	PRG-ROM
-	cpu.memory = append(make([]byte, 0x8000), PRGROM...)
-
 	//fmt.Printf("%#x\n", len(cpu.memory))
 
 	// 起動時/リセット時に0xFFFC/0xFFFDから開始アドレスをリードしてプログラムカウンタPCにセットしてやる必要があります。

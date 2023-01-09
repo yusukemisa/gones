@@ -4,7 +4,7 @@ Go言語によるファミコンエミュレーター実装
 # Test
 Run gones
 ```
- go run main.go cpu.go opecodes.go
+ go run main.go cpu.go opecodes.go ppu.go
 ```
 
 Run test

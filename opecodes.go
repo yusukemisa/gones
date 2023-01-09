@@ -1,6 +1,14 @@
 package main
 
 var opecodes = map[byte]*instruction{
+	0x4C: {
+		code:        0x4C,
+		name:        "JMP",
+		mode:        "Absolute",
+		description: "PCをIM16へジャンプ",
+		// Z: not affected
+		// N: not affected
+	},
 	0x78: {
 		code: 0x78,
 		name: "SEI",

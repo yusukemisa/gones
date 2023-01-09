@@ -1,6 +1,59 @@
 package main
 
+type PPURegister struct {
+	// Control
+	CTRL   byte // 0x2000 割り込み
+	MASK   byte // 0x2001 背景イネーブル
+	SCROLL byte // 0x2005 背景スクロール
+
+	// Object Attribute Memory - スプライトに対応する空間
+	OAMAddress byte // 0x2003
+	OAMData    byte // 0x2004
+
+	// PPU memory R/W用
+	Address byte // 0x2006
+	Data    byte // 0x2007
+}
+
+type AddressRegister struct {
+	high, low         byte
+	highShouldBeWrite bool
+}
+
+func (ar *AddressRegister) set(data uint16) {
+	ar.high = byte(data >> 8)                // 右シフトして上位8桁をとりだす
+	ar.low = byte(data & 0b0000000011111111) // 下位8ビットの&をとる
+}
+
+func (ar *AddressRegister) get() uint16 {
+	return uint16(ar.low | ar.high<<8)
+}
+
+// 8bitごと書き込む
+func (ar *AddressRegister) update(data byte) {
+	if ar.highShouldBeWrite {
+		ar.high = data
+	} else {
+		ar.low = data
+	}
+
+	// mirror down address above 0x3FFF
+	if ar.get() > 0x3FFF {
+		ar.set(ar.get() & 0b1111111111111111)
+	}
+	ar.highShouldBeWrite = !ar.highShouldBeWrite
+}
+
+func (ar *AddressRegister) increment() {
+	ar.set(ar.get() + 1)
+}
+
 type PPU struct {
+	// CPUに読ませるのはこちらの内部バッファ.
+	// 直接PPUメモリやROMから読んだ内容にアクセスさせない
+	internalDataBuf byte
+	address         *AddressRegister
+
 	register *PPURegister
 	// memory map
 	// Address          Size    Usage
@@ -21,21 +74,15 @@ type PPU struct {
 	memory []byte
 }
 
-func (p *PPU) read(address uint16) byte {
-	return p.memory[address]
+func (p *PPU) read() byte {
+	addr := p.address.get()
+	p.address.increment()
+
+	result := p.internalDataBuf
+	p.internalDataBuf = p.memory[addr]
+	return result
 }
 
-type PPURegister struct {
-	// Control
-	CTRL   byte // 0x2000 割り込み
-	MASK   byte // 0x2001 背景イネーブル
-	SCROLL byte // 0x2005 背景スクロール
-
-	// Object Attribute Memory - スプライトに対応する空間
-	OAMAddress byte // 0x2003
-	OAMData    byte // 0x2004
-
-	// PPU memory R/W用
-	Address byte // 0x2006
-	Data    byte // 0x2007
+func (p *PPU) write(data byte) {
+	p.address.update(data)
 }

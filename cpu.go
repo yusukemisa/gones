@@ -80,6 +80,9 @@ func (c *CPU) fetch() byte {
 func (c *CPU) exec(inst *instruction) {
 	fmt.Printf("%#v, \n", inst)
 	switch inst.name {
+	case "JMP":
+		l, h := uint16(c.fetch()), uint16(c.fetch())
+		c.register.PC = l | h<<8
 	case "SEI":
 		// IRQ割り込み禁止
 		// bit2を立てる
@@ -128,10 +131,11 @@ func (c *CPU) exec(inst *instruction) {
 		c.updateStatusRegister(c.register.Y)
 	case "BNE":
 		if inst.mode == "Relative" {
+			// 分岐するしないに関係なくPCが2byte回る必要ある
+			relAddr := int8(c.fetch())
 			if !testBit(c.register.P, 1) {
 				// uint8で取得した値を-128~127の範囲にキャストしてアドレスを計算
 				// 0xFFの場合アドレスを-1することになる
-				relAddr := int8(c.fetch())
 				addr := int(relAddr) + int(c.register.PC)
 				c.register.PC = uint16(addr)
 			}
@@ -142,7 +146,12 @@ func (c *CPU) exec(inst *instruction) {
 	fmt.Printf("A:%#02x,X:%#02x,Y:%#02x,PC:%#04x\n", c.register.A, c.register.X, c.register.Y, c.register.PC)
 }
 
+// TODO:Bus導入
 func (c *CPU) write(address uint16, data byte) {
+	switch address {
+	case 0x2006:
+		c.ppu.write(data)
+	}
 	c.memory[address] = data
 }
 
@@ -157,7 +166,12 @@ func (c *CPU) read(address uint16) byte {
 	} else if address < 0x4000 {
 		// 0x2000～0x2007	0x0008	PPU レジスタ
 		// 0x2008～0x3FFF	-	    PPUレジスタのミラー
-		return c.ppu.read((address - 0x2000) % 8)
+		registerNumber := (address - 0x2000) % 8
+		switch registerNumber {
+		case 7:
+			return c.ppu.read()
+		}
+		return 0
 	}
 	if address >= 0x8000 {
 		return c.memory[address]

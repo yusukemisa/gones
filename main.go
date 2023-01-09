@@ -41,7 +41,8 @@ func main() {
 		},
 		memory: append(make([]byte, 0x8000), PRGROM...),
 		ppu: &PPU{
-			memory: append(CHRROM, make([]byte, 0x2000)...),
+			address: &AddressRegister{},
+			memory:  append(CHRROM, make([]byte, 0x2000)...),
 		},
 	}
 	//fmt.Printf("%#x\n", len(cpu.memory))

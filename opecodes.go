@@ -21,7 +21,7 @@ var opecodes = map[byte]*instruction{
 		code:        0x8D,
 		name:        "STA",
 		mode:        "Absolute",
-		description: "アドレス「IM16」の8bit値をAにストア",
+		description: "Aの内容をアドレス「IM16」に書き込む",
 		// Z: not affected
 		// N: not affected
 	},
@@ -66,12 +66,11 @@ var opecodes = map[byte]*instruction{
 		// Z:Set if A = 0
 		// N:Set if bit 7 of A is set
 	},
-	0xD0: { //TODO: 理解する
+	0xD0: {
 		code:        0xD0,
 		name:        "BNE",
 		mode:        "Relative",
 		description: "Branch on not equal 0. ステータスレジスタのZがクリアされている場合アドレス「PC + IM8」へジャンプ",
-		// fetch後PCをインクリメントすると都合が悪い？
 		// Z: not affected
 		// N: not affected
 	},

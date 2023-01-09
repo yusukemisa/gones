@@ -111,7 +111,7 @@ func (c *CPU) exec(inst *instruction) {
 	case "STA":
 		if inst.mode == "Absolute" {
 			l, h := uint16(c.fetch()), uint16(c.fetch())
-			c.register.A = c.read(l | h<<8)
+			c.write(l|h<<8, c.register.A)
 		}
 	case "TXS":
 		c.register.S = c.register.X

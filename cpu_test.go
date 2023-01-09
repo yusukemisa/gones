@@ -69,18 +69,19 @@ func TestCPU_status(t *testing.T) {
 		"STA_Absolute(0x8D)": {
 			in: &CPU{
 				register: &Register{
+					A: 0xAA,
 					X: 0x02,
 				},
 				memory: []byte{0x8D, 0x03, 0x00, 0xFF, 0x00},
 			},
 			out: &CPU{
 				register: &Register{
-					A:  0xFF,
+					A:  0xAA,
 					X:  0x02,
 					PC: 0x03,
 					P:  0b00000000, //N,Z: not affected
 				},
-				memory: []byte{0x8D, 0x03, 0x00, 0xFF, 0x00},
+				memory: []byte{0x8D, 0x03, 0x00, 0xAA, 0x00},
 			},
 		},
 		"TXS_Implied(0x9A)": {
@@ -218,7 +219,7 @@ func TestCPU_status(t *testing.T) {
 			out: &CPU{
 				register: &Register{
 					X:  0x03,
-					PC: 0x04,
+					PC: 0x05,
 					P:  0b11111111,
 				},
 				memory: []byte{0x00, 0x00, 0x00, 0xD0, 0xFD, 0x00, 0xAA, 0xBB, 0xCC},

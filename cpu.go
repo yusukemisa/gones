@@ -150,7 +150,9 @@ func (c *CPU) exec(inst *instruction) {
 func (c *CPU) write(address uint16, data byte) {
 	switch address {
 	case 0x2006:
-		c.ppu.write(data)
+		c.ppu.writeAddress(data)
+	case 0x2007:
+		c.ppu.writeData(data)
 	}
 	c.memory[address] = data
 }

@@ -16,8 +16,8 @@ type PPURegister struct {
 }
 
 type AddressRegister struct {
-	high, low         byte
-	highShouldBeWrite bool
+	high, low        byte
+	lowShouldBeWrite bool
 }
 
 func (ar *AddressRegister) set(data uint16) {
@@ -26,22 +26,22 @@ func (ar *AddressRegister) set(data uint16) {
 }
 
 func (ar *AddressRegister) get() uint16 {
-	return uint16(ar.low | ar.high<<8)
+	return uint16(ar.high)<<8 | uint16(ar.low)
 }
 
 // 8bitごと書き込む
 func (ar *AddressRegister) update(data byte) {
-	if ar.highShouldBeWrite {
-		ar.high = data
-	} else {
+	if ar.lowShouldBeWrite {
 		ar.low = data
+	} else {
+		ar.high = data
 	}
 
 	// mirror down address above 0x3FFF
 	if ar.get() > 0x3FFF {
 		ar.set(ar.get() & 0b1111111111111111)
 	}
-	ar.highShouldBeWrite = !ar.highShouldBeWrite
+	ar.lowShouldBeWrite = !ar.lowShouldBeWrite
 }
 
 func (ar *AddressRegister) increment() {
@@ -83,6 +83,12 @@ func (p *PPU) read() byte {
 	return result
 }
 
-func (p *PPU) write(data byte) {
+func (p *PPU) writeAddress(data byte) {
 	p.address.update(data)
+}
+
+func (p *PPU) writeData(data byte) {
+	addr := p.address.get()
+	p.memory[addr] = data
+	p.address.increment()
 }

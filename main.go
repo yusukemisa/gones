@@ -71,16 +71,10 @@ func main() {
 	}
 	defer window.Destroy()
 
-	//renderer, err := sdl.CreateRenderer(window, -1, renderFlags)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//defer renderer.Destroy()
-
-	run(cpu, window, nil)
+	run(cpu, window)
 }
 
-func run(cpu *CPU, window *sdl.Window, renderer *sdl.Renderer) {
+func run(cpu *CPU, window *sdl.Window) {
 	surface, err := window.GetSurface()
 	if err != nil {
 		panic(err)

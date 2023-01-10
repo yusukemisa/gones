@@ -4,12 +4,12 @@ Go言語によるファミコンエミュレーター実装
 # Test
 Run gones
 ```
- go run main.go cpu.go opecodes.go ppu.go
+ make run
 ```
 
 Run test
 ```
- go test -v -run TestCPU_status
+ make test
 ```
 
 # Road map
@@ -23,8 +23,11 @@ Hello World Rom is a sample rom distributed [here](http://hp.vector.co.jp/author
 - [x] Hello World Romを10cycle読んで命令を実行
 - [x] Hello World Romを20cycle読んで命令を実行
 - [x] Hello World Romの動作に必要な命令セットの実装する
+- [x] 画面描画ライブラリ(go-sdl2)導入
 - [ ] PPU実装
-- [ ] PPUの処理結果をjpgで書き出す
+- [ ] PPUの処理結果を画面に表示
+- [ ] Bus実装
+- [ ] ジョイパッド実装
 
 参考
 - [ファミコンエミュレータの創り方　- Hello, World!編 -](https://qiita.com/bokuweb/items/1575337bef44ae82f4d3)

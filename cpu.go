@@ -56,19 +56,21 @@ type instruction struct {
 	name        string
 	mode        string
 	description string
+	cycle       int
 }
 
 // run is main processing in CPU
-func (c *CPU) run() {
-	for i := 0; i < 200; i++ {
-		code := c.fetch()
-		fmt.Printf("i=%d:code:%#02x\n", i, code)
-		inst, ok := opecodes[code]
-		if !ok {
-			log.Fatalf("opecode not found:%#02x", code)
-		}
-		c.exec(inst)
+func (c *CPU) run() int {
+	code := c.fetch()
+	//fmt.Printf("i=%d:code:%#02x\n", i, code)
+	inst, ok := opecodes[code]
+	if !ok {
+		log.Fatalf("opecode not found:%#02x", code)
 	}
+
+	c.exec(inst)
+	// 分岐でcycle数変わる場合があるのでexecが返した方が良い
+	return inst.cycle
 }
 
 func (c *CPU) fetch() byte {

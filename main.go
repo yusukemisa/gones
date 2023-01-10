@@ -2,8 +2,15 @@ package main
 
 import (
 	"bufio"
+	"github.com/veandco/go-sdl2/sdl"
 	"log"
 	"os"
+)
+
+var (
+	renderFlags uint32 = sdl.RENDERER_ACCELERATED | sdl.RENDERER_PRESENTVSYNC
+
+	windowWidth, windowHeight = 256 * 3, 240 * 3
 )
 
 func main() {
@@ -51,5 +58,57 @@ func main() {
 	//fmt.Printf("0xFFFC: %#02x\n", cpu.memory[0xFFFC])
 	//fmt.Printf("0xFFFD: %#02x\n", cpu.memory[0xFFFD])
 
-	cpu.run()
+	// render init
+	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
+		panic(err)
+	}
+	defer sdl.Quit()
+
+	window, err := sdl.CreateWindow("test", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
+		800, 600, sdl.WINDOW_SHOWN)
+	if err != nil {
+		panic(err)
+	}
+	defer window.Destroy()
+
+	//renderer, err := sdl.CreateRenderer(window, -1, renderFlags)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//defer renderer.Destroy()
+
+	run(cpu, window, nil)
+}
+
+func run(cpu *CPU, window *sdl.Window, renderer *sdl.Renderer) {
+	surface, err := window.GetSurface()
+	if err != nil {
+		panic(err)
+	}
+	surface.FillRect(nil, 0)
+
+	rect := &sdl.Rect{W: 300, H: 200}
+	window.UpdateSurface()
+
+	running := true
+	color := uint32(0x00ffff00)
+
+	for running {
+		_ = cpu.run()
+		//screenState := cpu.ppu.run(cycle * 3)
+		//if screenState != nil {
+		//	renderScreen(screenState, window)
+		//}
+		surface.FillRect(rect, color)
+		window.UpdateSurface()
+
+		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
+			switch event.(type) {
+			case *sdl.QuitEvent:
+				println("Quit")
+				running = false
+				break
+			}
+		}
+	}
 }

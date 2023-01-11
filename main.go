@@ -64,44 +64,43 @@ func main() {
 	}
 	defer sdl.Quit()
 
-	window, err := sdl.CreateWindow("test", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
+	window, err := sdl.CreateWindow("gones", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
 		800, 600, sdl.WINDOW_SHOWN)
 	if err != nil {
 		panic(err)
 	}
 	defer window.Destroy()
 
-	run(cpu, window)
+	renderer, err := sdl.CreateRenderer(window, -1, 0)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer renderer.Destroy()
+
+	texture, err := renderer.CreateTexture(sdl.PIXELFORMAT_ARGB8888, sdl.TEXTUREACCESS_STATIC, 800, 600)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer texture.Destroy()
+
+	run(cpu, &Renderer{
+		texture:  texture,
+		renderer: renderer,
+	})
 }
 
-func run(cpu *CPU, window *sdl.Window) {
-	surface, err := window.GetSurface()
-	if err != nil {
-		panic(err)
-	}
-	surface.FillRect(nil, 0)
-
-	rect := &sdl.Rect{W: 300, H: 200}
-	window.UpdateSurface()
-
-	running := true
-	color := uint32(0x00ffff00)
-
-	for running {
-		_ = cpu.run()
-		//screenState := cpu.ppu.run(cycle * 3)
-		//if screenState != nil {
-		//	renderScreen(screenState, window)
-		//}
-		surface.FillRect(rect, color)
-		window.UpdateSurface()
+func run(cpu *CPU, renderer *Renderer) {
+	for {
+		cycle := cpu.run()
+		if screen := cpu.ppu.run(cycle * 3); screen != nil {
+			renderer.renderScreen(screen)
+		}
 
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			switch event.(type) {
 			case *sdl.QuitEvent:
 				println("Quit")
-				running = false
-				break
+				return
 			}
 		}
 	}

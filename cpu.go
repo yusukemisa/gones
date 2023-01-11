@@ -80,7 +80,7 @@ func (c *CPU) fetch() byte {
 }
 
 func (c *CPU) exec(inst *instruction) {
-	fmt.Printf("%#v, \n", inst)
+	//fmt.Printf("%#v, \n", inst)
 	switch inst.name {
 	case "JMP":
 		l, h := uint16(c.fetch()), uint16(c.fetch())
@@ -145,7 +145,7 @@ func (c *CPU) exec(inst *instruction) {
 	default:
 		fmt.Printf("unknown code:%#v\n", inst)
 	}
-	fmt.Printf("A:%#02x,X:%#02x,Y:%#02x,PC:%#04x\n", c.register.A, c.register.X, c.register.Y, c.register.PC)
+	//fmt.Printf("A:%#02x,X:%#02x,Y:%#02x,PC:%#04x\n", c.register.A, c.register.X, c.register.Y, c.register.PC)
 }
 
 // TODO:Bus導入
@@ -202,7 +202,7 @@ func (c *CPU) updateStatusRegister(result byte) {
 	} else {
 		c.register.P = clearBit(c.register.P, 7)
 	}
-	fmt.Printf("result=%#02x,Z=%v,N=%v\n", result, testBit(c.register.P, 1), testBit(c.register.P, 7))
+	//fmt.Printf("result=%#02x,Z=%v,N=%v\n", result, testBit(c.register.P, 1), testBit(c.register.P, 7))
 }
 
 func testBit(x, n byte) bool {

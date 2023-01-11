@@ -1,5 +1,7 @@
 package main
 
+import "math/rand"
+
 type PPURegister struct {
 	// Control
 	CTRL   byte // 0x2000 割り込み
@@ -18,6 +20,12 @@ type PPURegister struct {
 type AddressRegister struct {
 	high, low        byte
 	lowShouldBeWrite bool
+}
+
+// Screen represents a screen to be displayed in a window.
+// Window here means the window of this application viewed directly by the user on the monitor.
+type Screen struct {
+	pixels []uint32
 }
 
 func (ar *AddressRegister) set(data uint16) {
@@ -91,4 +99,13 @@ func (p *PPU) writeData(data byte) {
 	addr := p.address.get()
 	p.memory[addr] = data
 	p.address.increment()
+}
+
+func (p *PPU) run(cycle int) *Screen {
+	pixels := make([]uint32, 800*600*4)
+	for i := range pixels {
+		pixels[i] = 0x00777777 + uint32(rand.Intn(0x00AAAAAA))
+	}
+
+	return &Screen{pixels}
 }

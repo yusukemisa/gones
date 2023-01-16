@@ -24,8 +24,11 @@ Hello World Rom is a sample rom distributed [here](http://hp.vector.co.jp/author
 - [x] Hello World Romを20cycle読んで命令を実行
 - [x] Hello World Romの動作に必要な命令セットの実装する
 - [x] 画面描画ライブラリ(go-sdl2)導入
-- [ ] PPU実装
-- [ ] PPUの処理結果を画面に表示
+- [x] PPU実装
+- [x] Hello world ROM実行(背景色変だが・・・）
+  - <img width="255" alt="image" src="https://user-images.githubusercontent.com/25860926/212728206-71512bbb-8848-49d5-9ccf-e7e147c7664d.png">
+
+- [ ] 背景色表示
 - [ ] Bus実装
 - [ ] ジョイパッド実装
 
@@ -37,6 +40,8 @@ Hello World Rom is a sample rom distributed [here](http://hp.vector.co.jp/author
 - [Writing NES Emulator in Rustをやった](https://zenn.dev/razokulover/articles/1191ca55f9f22e)
 
 
-## 1.1 EbitengineでHello World Romを描画する
+## 1.1 sdl2で画面描画する
+https://github.com/veandco/go-sdl2
 
+ebitengineはいつ画面の更新を行うかがよくわからなかったので使用を断念
 https://ebitengine.org/ja/

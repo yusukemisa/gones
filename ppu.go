@@ -1,6 +1,9 @@
 package main
 
-import "math/rand"
+import (
+	"fmt"
+	"image/color"
+)
 
 type PPURegister struct {
 	// Control
@@ -25,7 +28,69 @@ type AddressRegister struct {
 // Screen represents a screen to be displayed in a window.
 // Window here means the window of this application viewed directly by the user on the monitor.
 type Screen struct {
-	pixels []uint32
+	tile  []Tile
+	pixel []byte
+}
+
+type Tile struct {
+	x, y int
+	c    color.RGBA
+}
+
+func NewPPU(CHRROM []byte) *PPU {
+
+	// Spriteの初期化
+	sprites := make(map[int][]byte)
+	var count int
+	for i := 0; i < len(CHRROM); i += 0x10 {
+		high, low := CHRROM[i:i+8], CHRROM[i+0x08:i+0x10]
+		//fmt.Printf("i=%#04x:high=%#v,low=%#v\n", i, high, low)
+		sprite := make([]byte, 64)
+		for j := byte(0); j < 8; j++ {
+			for k := byte(8); 0 < k; k-- {
+				var v byte
+				if testBit(high[j], k) {
+					v = setBit(v, 1)
+				}
+				if testBit(low[j], k) {
+					v = setBit(v, 0)
+				}
+				//fmt.Printf("%d,%d,%d,%d,%#02x\n", j*8, (j*8)+k-8, j, k, v)
+				sprite[(j*8)+8-k] = v
+			}
+		}
+
+		sprites[count] = sprite
+		count++
+	}
+
+	canvas := &SDL2Canvas{}
+	canvas.Setup("gones", windowWidth, windowHeight)
+
+	//printSprite(sprites[0x48])
+
+	return &PPU{
+		address: &AddressRegister{},
+		memory:  append(CHRROM, make([]byte, 0x2000)...),
+		sprites: sprites,
+		canvas:  canvas,
+	}
+}
+
+func printSprite(sprite []byte) {
+	for i, v := range sprite {
+		fmt.Printf("%02x ", v)
+		if (i+1)%8 == 0 {
+			fmt.Println("")
+		}
+	}
+	fmt.Println("----")
+	//for i := 0; i < 8; i++ {
+	//	for j := 0; j < 8; j++ {
+	//		fmt.Printf("%02x ", sprite[j+(8*i)])
+	//	}
+	//	fmt.Println("")
+	//}
 }
 
 func (ar *AddressRegister) set(data uint16) {
@@ -57,6 +122,8 @@ func (ar *AddressRegister) increment() {
 }
 
 type PPU struct {
+	cycle int
+	line  int
 	// CPUに読ませるのはこちらの内部バッファ.
 	// 直接PPUメモリやROMから読んだ内容にアクセスさせない
 	internalDataBuf byte
@@ -79,7 +146,10 @@ type PPU struct {
 	// 0x3F00～0x3F0F	0x0010	バックグラウンドパレット
 	// 0x3F10～0x3F1F	0x0010	スプライトパレット
 	// 0x3F20～0x3FFF	0x0040	0x3F00~0x3F1Fのミラー
-	memory []byte
+	memory  []byte
+	sprites map[int][]byte
+	tiles   []*Tile
+	canvas  *SDL2Canvas
 }
 
 func (p *PPU) read() byte {
@@ -102,10 +172,88 @@ func (p *PPU) writeData(data byte) {
 }
 
 func (p *PPU) run(cycle int) *Screen {
-	pixels := make([]uint32, 800*600*4)
-	for i := range pixels {
-		pixels[i] = 0x00777777 + uint32(rand.Intn(0x00AAAAAA))
-	}
+	p.cycle += cycle
+	if p.cycle >= 341 {
+		p.cycle -= 341
+		p.line++
 
-	return &Screen{pixels}
+		// line=1行目から始まる
+		if p.line <= 240 && p.line%8 == 0 {
+			p.buildBackGround(p.line)
+		}
+		if p.line == 262 {
+			p.line = 0
+			return &Screen{}
+		}
+	}
+	return nil
+}
+
+// 1行分だけつくる
+func (p *PPU) buildBackGround(line int) {
+	// line=120; 0x1C0~0x1E0 14 * 32 = 448(1C0)
+	index := (line / 8) - 1
+	for i := 0; i < 0x20; i++ {
+		p.buildTile(0x20*index + i)
+	}
+}
+
+// レンダリングに必要な形式(x,y,RGB)にコンバートする
+func (p *PPU) buildTile(tileAddress int) {
+	// sprite取得
+	spriteNum := p.memory[0x2000+tileAddress]
+	sprite := p.sprites[int(spriteNum)]
+
+	for y := 0; y < 8; y++ {
+		for x := 0; x < 8; x++ {
+			colorNum := getSpriteColor(x, y, sprite)
+			//colorNum := sprite[x+y*8]
+			var c *color.RGBA
+			switch colorNum {
+			case 0:
+				// 黒
+				c = &color.RGBA{
+					R: 0x50,
+					G: 0x50,
+					B: 0x50,
+				}
+			case 1:
+				// グレー
+				c = &color.RGBA{
+					R: 0x80,
+					G: 0x80,
+					B: 0x80,
+				}
+			case 2:
+				// ライトグレー
+				c = &color.RGBA{
+					R: 0xC7,
+					G: 0xC7,
+					B: 0xC7,
+				}
+			case 3:
+				// 白
+				c = &color.RGBA{
+					R: 0xFF,
+					G: 0xFF,
+					B: 0xFF,
+				}
+			}
+
+			p.canvas.SetPixel(x+(tileAddress%0x20)*8, y+(tileAddress/0x20)*8, *c)
+		}
+	}
+}
+
+func getSpriteColor(x int, y int, sprite []byte) byte {
+	// (x,y) = (0,0) -> byte[0]
+	// (x,y) = (7,0) -> byte[7]
+	// (x,y) = (0,1) -> byte[8]
+	// (x,y) = (7,1) -> byte[15]
+	// (x,y) = (0,2) -> byte[16]
+	n := sprite[y*8+x]
+	if 0 <= n && n <= 3 {
+		return sprite[y*8+x]
+	}
+	return 0
 }

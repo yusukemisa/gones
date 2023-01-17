@@ -26,7 +26,8 @@ Hello World Rom is a sample rom distributed [here](http://hp.vector.co.jp/author
 - [x] 画面描画ライブラリ(go-sdl2)導入
 - [x] PPU実装
 - [x] Hello world ROM実行
-  - <img width="291" alt="image" src="https://user-images.githubusercontent.com/25860926/212910341-49448c42-e7f2-41c8-9378-31dc0842403c.png">
+  - <img width="368" alt="スクリーンショット 2023-01-17 22 26 22" src="https://user-images.githubusercontent.com/25860926/212910798-8b1ec3d3-6117-4440-9c15-8179401f20bb.png">
+
 
 
 - [x] 背景色表示

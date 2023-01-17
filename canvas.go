@@ -84,34 +84,6 @@ func (s *SDL2Canvas) Setup(title string, windowWidth int, windowHeight int) {
 	s.Running = true
 }
 
-func InitPixels() []byte {
-	pixels := make([]byte, windowWidth*windowHeight*3)
-	for i, _ := range pixels {
-		pixels[i] = 0xFF
-	}
-	return pixels
-}
-
-func (s *SDL2Canvas) HandleEvents() {
-	s.MouseClicked = false
-
-	for s.event = sdl.PollEvent(); s.event != nil; s.event = sdl.PollEvent() {
-		switch t := s.event.(type) {
-		case *sdl.QuitEvent:
-			s.Running = false
-		case *sdl.KeyboardEvent:
-			if t.Keysym.Sym == sdl.K_ESCAPE {
-				s.Running = false
-			}
-		// Handle Mouse Event
-		case *sdl.MouseButtonEvent:
-			s.MouseClicked = true
-			s.MouseX = t.X
-			s.MouseY = t.Y
-		}
-	}
-}
-
 func (s *SDL2Canvas) SetPixel(x int, y int, c color.RGBA) {
 	// 8 x 14
 	index := (y*s.windowWidth + x) * 3

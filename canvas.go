@@ -84,15 +84,7 @@ func (s *SDL2Canvas) Setup(title string, windowWidth int, windowHeight int) {
 	s.Running = true
 }
 
-func (s *SDL2Canvas) SetPixel(x int, y int, c color.RGBA) {
-	// 8 x 14
-	index := (y*s.windowWidth + x) * 3
-	//fmt.Println(x, y, index, len(s.pixels))
-	if index+3 < len(s.pixels) && index >= 0 {
-		s.pixels[index] = c.R
-		s.pixels[index+1] = c.G
-		s.pixels[index+2] = c.B
-	}
+func (s *SDL2Canvas) SetPixel(x int, y int, c *color.RGBA) {
 	s.renderer.SetDrawColor(c.R, c.R, c.B, 0)
 	s.renderer.DrawPoint(int32(x), int32(y))
 }

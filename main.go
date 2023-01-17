@@ -37,14 +37,11 @@ func main() {
 	if err != nil {
 		log.Fatal("failed to read PRGROM:", err)
 	}
-	//fmt.Printf("%#04x\n", prg)
+
 	_, err = cr.Read(CHRROM)
 	if err != nil {
 		log.Fatal(err)
 	}
-	//fmt.Printf("%#04x\n", chr)
-
-	//fmt.Printf("%#x\n", len(cpu.memory))
 
 	// 起動時/リセット時に0xFFFC/0xFFFDから開始アドレスをリードしてプログラムカウンタPCにセットしてやる必要があります。
 	//fmt.Printf("0xFFFC: %#02x\n", cpu.memory[0xFFFC])
@@ -56,12 +53,15 @@ func main() {
 		register: &Register{
 			PC: 0x8000,
 		},
-		memory: append(make([]byte, 0x8000), PRGROM...),
+		memory: make([]byte, 0x10000),
 		ppu:    ppu,
 	}
 
-	run(cpu)
+	for b := 0; b < len(PRGROM); b++ {
+		cpu.memory[0x8000+b] = PRGROM[b]
+	}
 
+	run(cpu)
 }
 
 func run(cpu *CPU) {

@@ -25,10 +25,11 @@ Hello World Rom is a sample rom distributed [here](http://hp.vector.co.jp/author
 - [x] Hello World Romの動作に必要な命令セットの実装する
 - [x] 画面描画ライブラリ(go-sdl2)導入
 - [x] PPU実装
-- [x] Hello world ROM実行(背景色変だが・・・）
-  - <img width="255" alt="image" src="https://user-images.githubusercontent.com/25860926/212728206-71512bbb-8848-49d5-9ccf-e7e147c7664d.png">
+- [x] Hello world ROM実行
+  - <img width="291" alt="image" src="https://user-images.githubusercontent.com/25860926/212910341-49448c42-e7f2-41c8-9378-31dc0842403c.png">
 
-- [ ] 背景色表示
+
+- [x] 背景色表示
 - [ ] Bus実装
 - [ ] ジョイパッド実装
 

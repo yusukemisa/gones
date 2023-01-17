@@ -207,40 +207,7 @@ func (p *PPU) buildTile(tileAddress int) {
 	for y := 0; y < 8; y++ {
 		for x := 0; x < 8; x++ {
 			colorNum := getSpriteColor(x, y, sprite)
-			//colorNum := sprite[x+y*8]
-			var c *color.RGBA
-			switch colorNum {
-			case 0:
-				// 黒
-				c = &color.RGBA{
-					R: 0x50,
-					G: 0x50,
-					B: 0x50,
-				}
-			case 1:
-				// グレー
-				c = &color.RGBA{
-					R: 0x80,
-					G: 0x80,
-					B: 0x80,
-				}
-			case 2:
-				// ライトグレー
-				c = &color.RGBA{
-					R: 0xC7,
-					G: 0xC7,
-					B: 0xC7,
-				}
-			case 3:
-				// 白
-				c = &color.RGBA{
-					R: 0xFF,
-					G: 0xFF,
-					B: 0xFF,
-				}
-			}
-
-			p.canvas.SetPixel(x+(tileAddress%0x20)*8, y+(tileAddress/0x20)*8, *c)
+			p.canvas.SetPixel(x+(tileAddress%0x20)*8, y+(tileAddress/0x20)*8, p.getBackGroundColor(colorNum))
 		}
 	}
 }
@@ -256,4 +223,16 @@ func getSpriteColor(x int, y int, sprite []byte) byte {
 		return sprite[y*8+x]
 	}
 	return 0
+}
+
+// getBackGroundColor returns RGBA color for background.
+// 0x3F00～0x3F0F	0x0010	バックグラウンドパレット
+func (p *PPU) getBackGroundColor(paletteNum byte) *color.RGBA {
+	paletteIndex := p.memory[0x3F00+int(paletteNum)]
+	c := palette[paletteIndex]
+	return &color.RGBA{
+		R: c[0],
+		G: c[1],
+		B: c[2],
+	}
 }

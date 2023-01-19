@@ -1,6 +1,10 @@
 build:
 	go build -o bin/gones
-run :
-	go run main.go cpu.go ppu.go opecodes.go canvas.go palette.go
+
+clean:
+	rm -f ./bin/gones
+.PHONY: clean
+
 test:
-	go test -v -run TestCPU_status
+	go test -v -race ./...
+.PHONY: test

@@ -1,10 +1,11 @@
-package main
+package cpu
 
 import (
 	"fmt"
 	"log"
-	
+
 	"github.com/yusukemisa/gones/ppu"
+	"github.com/yusukemisa/gones/rom"
 	"github.com/yusukemisa/gones/util"
 )
 
@@ -26,10 +27,25 @@ type CPU struct {
 	//TODO: memoryはBusを通じてR/Wする
 	memory []byte
 	//TODO: PPUはBusを通じてR/Wする
-	ppu *ppu.PPU
+	PPU *ppu.PPU
 
 	// test時は任意のメモリマップにしたい
 	debug bool
+}
+
+func NewCPU(rom *rom.Rom) *CPU {
+	cpu := &CPU{
+		register: &Register{
+			PC: 0x8000,
+		},
+		memory: make([]byte, 0x10000),
+		PPU:    ppu.NewPPU(rom.CHR),
+	}
+
+	for b := 0; b < len(rom.PRG); b++ {
+		cpu.memory[0x8000+b] = rom.PRG[b]
+	}
+	return cpu
 }
 
 type Register struct {
@@ -65,8 +81,8 @@ type instruction struct {
 	cycle       int
 }
 
-// run is main processing in CPU
-func (c *CPU) run() int {
+// Run is main processing in CPU
+func (c *CPU) Run() int {
 	code := c.fetch()
 	//fmt.Printf("i=%d:code:%#02x\n", i, code)
 	inst, ok := opecodes[code]
@@ -158,9 +174,9 @@ func (c *CPU) exec(inst *instruction) {
 func (c *CPU) write(address uint16, data byte) {
 	switch address {
 	case 0x2006:
-		c.ppu.WriteAddress(data)
+		c.PPU.WriteAddress(data)
 	case 0x2007:
-		c.ppu.WriteData(data)
+		c.PPU.WriteData(data)
 	default:
 		c.memory[address] = data
 	}
@@ -180,7 +196,7 @@ func (c *CPU) read(address uint16) byte {
 		registerNumber := (address - 0x2000) % 8
 		switch registerNumber {
 		case 7:
-			return c.ppu.Read()
+			return c.PPU.Read()
 		}
 		return 0
 	}

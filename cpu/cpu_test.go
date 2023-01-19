@@ -1,6 +1,7 @@
-package main
+package cpu
 
 import (
+	"github.com/yusukemisa/gones"
 	"reflect"
 	"testing"
 )
@@ -232,7 +233,7 @@ func TestCPU_status(t *testing.T) {
 		}
 		t.Run(title, func(t *testing.T) {
 			opecode := tt.in.fetch()
-			tt.in.exec(opecodes[opecode])
+			tt.in.exec(main.opecodes[opecode])
 
 			if !reflect.DeepEqual(tt.in, tt.out) {
 				t.Errorf("\nwant=%#v\n got=%#v", tt.out, tt.in)

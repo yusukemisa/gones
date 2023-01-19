@@ -1,4 +1,4 @@
-package main
+package cpu
 
 import (
 	"reflect"
@@ -6,6 +6,7 @@ import (
 )
 
 func TestCPU_status(t *testing.T) {
+	t.Parallel()
 	for title, tt := range map[string]struct {
 		in  *CPU
 		out *CPU
@@ -226,6 +227,7 @@ func TestCPU_status(t *testing.T) {
 			},
 		},
 	} {
+		tt := tt
 		tt.in.debug, tt.out.debug = true, true
 		if tt.in.register == nil {
 			tt.in.register = &Register{}

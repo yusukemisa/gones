@@ -1,8 +1,15 @@
-package main
+package ppu
 
 import (
 	"fmt"
 	"image/color"
+
+	"github.com/yusukemisa/gones/canvas"
+	"github.com/yusukemisa/gones/util"
+)
+
+const (
+	windowWidth, windowHeight = 256, 240
 )
 
 type PPURegister struct {
@@ -49,11 +56,11 @@ func NewPPU(CHRROM []byte) *PPU {
 		for j := byte(0); j < 8; j++ {
 			for k := byte(8); 0 < k; k-- {
 				var v byte
-				if testBit(high[j], k) {
-					v = setBit(v, 1)
+				if util.TestBit(high[j], k) {
+					v = util.SetBit(v, 1)
 				}
-				if testBit(low[j], k) {
-					v = setBit(v, 0)
+				if util.TestBit(low[j], k) {
+					v = util.SetBit(v, 0)
 				}
 				//fmt.Printf("%d,%d,%d,%d,%#02x\n", j*8, (j*8)+k-8, j, k, v)
 				sprite[(j*8)+8-k] = v
@@ -64,8 +71,8 @@ func NewPPU(CHRROM []byte) *PPU {
 		count++
 	}
 
-	canvas := &SDL2Canvas{}
-	canvas.Setup("gones", windowWidth, windowHeight)
+	can := &canvas.SDL2Canvas{}
+	can.Setup("gones", windowWidth, windowHeight)
 
 	//printSprite(sprites[0x48])
 
@@ -73,7 +80,7 @@ func NewPPU(CHRROM []byte) *PPU {
 		address: &AddressRegister{},
 		memory:  append(CHRROM, make([]byte, 0x2000)...),
 		sprites: sprites,
-		canvas:  canvas,
+		Canvas:  can,
 	}
 }
 
@@ -149,10 +156,10 @@ type PPU struct {
 	memory  []byte
 	sprites map[int][]byte
 	tiles   []*Tile
-	canvas  *SDL2Canvas
+	Canvas  *canvas.SDL2Canvas
 }
 
-func (p *PPU) read() byte {
+func (p *PPU) Read() byte {
 	addr := p.address.get()
 	p.address.increment()
 
@@ -161,17 +168,17 @@ func (p *PPU) read() byte {
 	return result
 }
 
-func (p *PPU) writeAddress(data byte) {
+func (p *PPU) WriteAddress(data byte) {
 	p.address.update(data)
 }
 
-func (p *PPU) writeData(data byte) {
+func (p *PPU) WriteData(data byte) {
 	addr := p.address.get()
 	p.memory[addr] = data
 	p.address.increment()
 }
 
-func (p *PPU) run(cycle int) *Screen {
+func (p *PPU) Run(cycle int) *Screen {
 	p.cycle += cycle
 	if p.cycle >= 341 {
 		p.cycle -= 341
@@ -207,7 +214,7 @@ func (p *PPU) buildTile(tileAddress int) {
 	for y := 0; y < 8; y++ {
 		for x := 0; x < 8; x++ {
 			colorNum := getSpriteColor(x, y, sprite)
-			p.canvas.SetPixel(x+(tileAddress%0x20)*8, y+(tileAddress/0x20)*8, p.getBackGroundColor(colorNum))
+			p.Canvas.SetPixel(x+(tileAddress%0x20)*8, y+(tileAddress/0x20)*8, p.getBackGroundColor(colorNum))
 		}
 	}
 }

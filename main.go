@@ -5,12 +5,9 @@ import (
 	"os"
 
 	"github.com/veandco/go-sdl2/sdl"
-	
-	"github.com/yusukemisa/gones/rom"
-)
 
-const (
-	windowWidth, windowHeight = 256, 240
+	"github.com/yusukemisa/gones/cpu"
+	"github.com/yusukemisa/gones/rom"
 )
 
 func main() {
@@ -18,31 +15,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	rom := rom.NewRom(f)
-	ppu := NewPPU(rom.CHR)
-	cpu := &CPU{
-		register: &Register{
-			PC: 0x8000,
-		},
-		memory: make([]byte, 0x10000),
-		ppu:    ppu,
-	}
-
-	for b := 0; b < len(rom.PRG); b++ {
-		cpu.memory[0x8000+b] = rom.PRG[b]
-	}
-
-	run(cpu)
+	run(cpu.NewCPU(rom.NewRom(f)))
 }
 
-func run(cpu *CPU) {
-
+func run(cpu *cpu.CPU) {
 	for {
-		cycle := cpu.run()
-		if screen := cpu.ppu.run(cycle * 3); screen != nil {
-			cpu.ppu.canvas.renderer.Present()
-			cpu.ppu.canvas.renderer.Clear()
+		cycle := cpu.Run()
+		if screen := cpu.PPU.Run(cycle * 3); screen != nil {
+			cpu.PPU.Canvas.Renderer.Present()
+			cpu.PPU.Canvas.Renderer.Clear()
 			sdl.Delay(100)
 		}
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {

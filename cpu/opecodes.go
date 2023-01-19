@@ -1,6 +1,17 @@
-package main
+package cpu
 
 var opecodes = map[byte]*instruction{
+	0x00: {
+		code: 0x00,
+		name: "BRK",
+		mode: "Implied",
+		description: "BRK命令は、強制的に割り込み要求を発生させます。プログラムカウンタとプロセッサステータスがスタックにプッシュされ、" +
+			"$FFFE/FのIRQ割り込みベクタがPCにロードされ、ステータス内のブレークフラグが1にセットされます。",
+		cycle: 7,
+		// Z: not affected
+		// N: not affected
+		// B: Set to 1
+	},
 	0x4C: {
 		code:        0x4C,
 		name:        "JMP",

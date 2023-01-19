@@ -1,8 +1,12 @@
-package main
+package cpu
 
 import (
 	"fmt"
 	"log"
+
+	"github.com/yusukemisa/gones/ppu"
+	"github.com/yusukemisa/gones/rom"
+	"github.com/yusukemisa/gones/util"
 )
 
 type CPU struct {
@@ -10,7 +14,9 @@ type CPU struct {
 	// memory map
 	// Address          Size    Usage
 	// 0x0000～0x07FF	0x0800	WRAM
-	// 0x0800～0x1FFF	-	    WRAMのミラー
+	// 0x0800～0x0FFF	-	    WRAMのミラー1
+	// 0x1000～0x17FF	-	    WRAMのミラー2
+	// 0x1800～0x1FFF	-	    WRAMのミラー3
 	// 0x2000～0x2007	0x0008	PPU レジスタ
 	// 0x2008～0x3FFF	-	    PPUレジスタのミラー
 	// 0x4000～0x401F	0x0020	APU I/O、PAD
@@ -18,12 +24,28 @@ type CPU struct {
 	// 0x6000～0x7FFF	0x2000	拡張RAM
 	// 0x8000～0xBFFF	0x4000	PRG-ROM
 	// 0xC000～0xFFFF	0x4000	PRG-ROM
+	//TODO: memoryはBusを通じてR/Wする
 	memory []byte
-
-	ppu *PPU
+	//TODO: PPUはBusを通じてR/Wする
+	PPU *ppu.PPU
 
 	// test時は任意のメモリマップにしたい
 	debug bool
+}
+
+func NewCPU(rom *rom.Rom) *CPU {
+	cpu := &CPU{
+		register: &Register{
+			PC: 0x8000,
+		},
+		memory: make([]byte, 0x10000),
+		PPU:    ppu.NewPPU(rom.CHR),
+	}
+
+	for b := 0; b < len(rom.PRG); b++ {
+		cpu.memory[0x8000+b] = rom.PRG[b]
+	}
+	return cpu
 }
 
 type Register struct {
@@ -59,8 +81,8 @@ type instruction struct {
 	cycle       int
 }
 
-// run is main processing in CPU
-func (c *CPU) run() int {
+// Run is main processing in CPU
+func (c *CPU) Run() int {
 	code := c.fetch()
 	//fmt.Printf("i=%d:code:%#02x\n", i, code)
 	inst, ok := opecodes[code]
@@ -135,7 +157,7 @@ func (c *CPU) exec(inst *instruction) {
 		if inst.mode == "Relative" {
 			// 分岐するしないに関係なくPCが2byte回る必要ある
 			relAddr := int8(c.fetch())
-			if !testBit(c.register.P, 1) {
+			if !util.TestBit(c.register.P, 1) {
 				// uint8で取得した値を-128~127の範囲にキャストしてアドレスを計算
 				// 0xFFの場合アドレスを-1することになる
 				addr := int(relAddr) + int(c.register.PC)
@@ -152,11 +174,12 @@ func (c *CPU) exec(inst *instruction) {
 func (c *CPU) write(address uint16, data byte) {
 	switch address {
 	case 0x2006:
-		c.ppu.writeAddress(data)
+		c.PPU.WriteAddress(data)
 	case 0x2007:
-		c.ppu.writeData(data)
+		c.PPU.WriteData(data)
+	default:
+		c.memory[address] = data
 	}
-	c.memory[address] = data
 }
 
 func (c *CPU) read(address uint16) byte {
@@ -173,7 +196,7 @@ func (c *CPU) read(address uint16) byte {
 		registerNumber := (address - 0x2000) % 8
 		switch registerNumber {
 		case 7:
-			return c.ppu.read()
+			return c.PPU.Read()
 		}
 		return 0
 	}
@@ -190,29 +213,17 @@ func (c *CPU) read(address uint16) byte {
 func (c *CPU) updateStatusRegister(result byte) {
 	// bit1	Z
 	if result == 0 {
-		c.register.P = setBit(c.register.P, 1)
+		c.register.P = util.SetBit(c.register.P, 1)
 	} else {
-		c.register.P = clearBit(c.register.P, 1)
+		c.register.P = util.ClearBit(c.register.P, 1)
 	}
 
 	// Bit7 N
 	// Aの最上部bitの値とのORをとる
-	if testBit(result, 7) {
-		c.register.P = setBit(c.register.P, 7)
+	if util.TestBit(result, 7) {
+		c.register.P = util.SetBit(c.register.P, 7)
 	} else {
-		c.register.P = clearBit(c.register.P, 7)
+		c.register.P = util.ClearBit(c.register.P, 7)
 	}
 	//fmt.Printf("result=%#02x,Z=%v,N=%v\n", result, testBit(c.register.P, 1), testBit(c.register.P, 7))
-}
-
-func testBit(x, n byte) bool {
-	return x&(1<<n) != 0
-}
-
-func setBit(x, n byte) byte {
-	return x | (1 << n)
-}
-
-func clearBit(x, n byte) byte {
-	return x &^ (1 << n)
 }

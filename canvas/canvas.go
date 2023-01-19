@@ -1,4 +1,4 @@
-package main
+package canvas
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ type SDL2Canvas struct {
 	windowWidth  int
 	windowHeight int
 	window       *sdl.Window
-	renderer     *sdl.Renderer
+	Renderer     *sdl.Renderer
 	texture      *sdl.Texture
 	pixels       []byte
 	event        sdl.Event
@@ -25,7 +25,7 @@ type SDL2Canvas struct {
 	MouseY       int32
 }
 
-// Setup Window / renderer / texture
+// Setup Window / Renderer / texture
 func (s *SDL2Canvas) Setup(title string, windowWidth int, windowHeight int) {
 	sdl.Init(sdl.INIT_EVERYTHING)
 
@@ -47,13 +47,13 @@ func (s *SDL2Canvas) Setup(title string, windowWidth int, windowHeight int) {
 		os.Exit(1)
 	}
 
-	s.renderer, s.err = sdl.CreateRenderer(s.window, -1, sdl.RENDERER_ACCELERATED)
+	s.Renderer, s.err = sdl.CreateRenderer(s.window, -1, sdl.RENDERER_ACCELERATED)
 	if s.err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create renderer: %s\n", s.err)
+		fmt.Fprintf(os.Stderr, "Failed to create Renderer: %s\n", s.err)
 		os.Exit(1)
 	}
 
-	s.texture, s.err = s.renderer.CreateTexture(
+	s.texture, s.err = s.Renderer.CreateTexture(
 		sdl.PIXELFORMAT_RGB24, sdl.TEXTUREACCESS_STREAMING,
 		int32(windowWidth), int32(windowHeight))
 	if s.err != nil {
@@ -65,28 +65,28 @@ func (s *SDL2Canvas) Setup(title string, windowWidth int, windowHeight int) {
 	//p := &s.pixels
 	//fmt.Println(p)
 	//
-	//s.renderer.Clear()
+	//s.Renderer.Clear()
 	//
-	//s.renderer.SetDrawColor(0xFF, 0xFF, 0xFF, 0)
-	//s.renderer.DrawLine(0, 0, 256, 240)
-	//s.renderer.ReadPixels(nil, sdl.PIXELFORMAT_RGB24, unsafe.Pointer(p), 256*240*3)
+	//s.Renderer.SetDrawColor(0xFF, 0xFF, 0xFF, 0)
+	//s.Renderer.DrawLine(0, 0, 256, 240)
+	//s.Renderer.ReadPixels(nil, sdl.PIXELFORMAT_RGB24, unsafe.Pointer(p), 256*240*3)
 	//fmt.Println(p)
-	//s.renderer.DrawLines(
+	//s.Renderer.DrawLines(
 	//	[]sdl.Point{
 	//		{0, 0},
 	//		{10, 10},
 	//		{50, 10},
 	//		{30, 40},
 	//	})
-	//s.renderer.Present()
+	//s.Renderer.Present()
 	//s.Update()
 	//s.Render()
 	s.Running = true
 }
 
 func (s *SDL2Canvas) SetPixel(x int, y int, c *color.RGBA) {
-	s.renderer.SetDrawColor(c.R, c.R, c.B, 0)
-	s.renderer.DrawPoint(int32(x), int32(y))
+	s.Renderer.SetDrawColor(c.R, c.R, c.B, 0)
+	s.Renderer.DrawPoint(int32(x), int32(y))
 }
 
 func (s *SDL2Canvas) Update() {
@@ -94,15 +94,15 @@ func (s *SDL2Canvas) Update() {
 }
 
 func (s *SDL2Canvas) Render() {
-	s.renderer.Clear()
+	s.Renderer.Clear()
 
-	s.renderer.Copy(s.texture, nil, nil)
-	s.renderer.Present()
+	s.Renderer.Copy(s.texture, nil, nil)
+	s.Renderer.Present()
 }
 
 func (s *SDL2Canvas) Shutdown() {
 	s.texture.Destroy()
-	s.renderer.Destroy()
+	s.Renderer.Destroy()
 	s.window.Destroy()
 	sdl.Quit()
 }

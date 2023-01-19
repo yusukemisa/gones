@@ -10,7 +10,9 @@ type CPU struct {
 	// memory map
 	// Address          Size    Usage
 	// 0x0000～0x07FF	0x0800	WRAM
-	// 0x0800～0x1FFF	-	    WRAMのミラー
+	// 0x0800～0x0FFF	-	    WRAMのミラー1
+	// 0x1000～0x17FF	-	    WRAMのミラー2
+	// 0x1800～0x1FFF	-	    WRAMのミラー3
 	// 0x2000～0x2007	0x0008	PPU レジスタ
 	// 0x2008～0x3FFF	-	    PPUレジスタのミラー
 	// 0x4000～0x401F	0x0020	APU I/O、PAD
@@ -18,8 +20,9 @@ type CPU struct {
 	// 0x6000～0x7FFF	0x2000	拡張RAM
 	// 0x8000～0xBFFF	0x4000	PRG-ROM
 	// 0xC000～0xFFFF	0x4000	PRG-ROM
+	//TODO: memoryはBusを通じてR/Wする
 	memory []byte
-
+	//TODO: PPUはBusを通じてR/Wする
 	ppu *PPU
 
 	// test時は任意のメモリマップにしたい
@@ -155,8 +158,9 @@ func (c *CPU) write(address uint16, data byte) {
 		c.ppu.writeAddress(data)
 	case 0x2007:
 		c.ppu.writeData(data)
+	default:
+		c.memory[address] = data
 	}
-	c.memory[address] = data
 }
 
 func (c *CPU) read(address uint16) byte {

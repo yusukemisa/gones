@@ -3,6 +3,7 @@ package bus
 import (
 	"fmt"
 
+	"github.com/yusukemisa/gones/ppu"
 	"github.com/yusukemisa/gones/rom"
 )
 
@@ -14,6 +15,7 @@ import (
 type bus struct {
 	cpuRAM []byte // 11bit = 2048 = 0x0800
 	rom    *rom.Rom
+	ppu    *ppu.PPU
 	debug  bool
 }
 
@@ -43,7 +45,7 @@ func (b *bus) Read(address uint16) byte {
 		registerNumber := address & 0b0000_0000_0000_0111
 		switch registerNumber {
 		case 7:
-			//return b.ppu.read()
+			return b.ppu.Read()
 		}
 		return 0
 	}

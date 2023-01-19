@@ -1,12 +1,12 @@
 package cpu
 
 import (
-	"github.com/yusukemisa/gones"
 	"reflect"
 	"testing"
 )
 
 func TestCPU_status(t *testing.T) {
+	t.Parallel()
 	for title, tt := range map[string]struct {
 		in  *CPU
 		out *CPU
@@ -227,13 +227,14 @@ func TestCPU_status(t *testing.T) {
 			},
 		},
 	} {
+		tt := tt
 		tt.in.debug, tt.out.debug = true, true
 		if tt.in.register == nil {
 			tt.in.register = &Register{}
 		}
 		t.Run(title, func(t *testing.T) {
 			opecode := tt.in.fetch()
-			tt.in.exec(main.opecodes[opecode])
+			tt.in.exec(opecodes[opecode])
 
 			if !reflect.DeepEqual(tt.in, tt.out) {
 				t.Errorf("\nwant=%#v\n got=%#v", tt.out, tt.in)

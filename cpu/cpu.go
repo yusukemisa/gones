@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/yusukemisa/gones/bus"
 	"github.com/yusukemisa/gones/ppu"
 	"github.com/yusukemisa/gones/rom"
 	"github.com/yusukemisa/gones/util"
@@ -28,6 +29,7 @@ type CPU struct {
 	memory []byte
 	//TODO: PPUはBusを通じてR/Wする
 	PPU *ppu.PPU
+	bus *bus.Bus
 
 	// test時は任意のメモリマップにしたい
 	debug bool
@@ -40,6 +42,7 @@ func NewCPU(rom *rom.Rom) *CPU {
 		},
 		memory: make([]byte, 0x10000),
 		PPU:    ppu.NewPPU(rom.CHR),
+		bus:    bus.NewBus(false, rom),
 	}
 
 	for b := 0; b < len(rom.PRG); b++ {
@@ -98,7 +101,7 @@ func (c *CPU) Run() int {
 func (c *CPU) fetch() byte {
 	address := c.register.PC
 	c.register.PC++
-	return c.read(address)
+	return c.bus.Read(address)
 }
 
 func (c *CPU) exec(inst *instruction) {
@@ -183,27 +186,7 @@ func (c *CPU) write(address uint16, data byte) {
 }
 
 func (c *CPU) read(address uint16) byte {
-	if c.debug {
-		return c.memory[address]
-	}
-	if address < 0x2000 {
-		// 0x0000～0x07FF	0x0800	WRAM
-		// 0x0800～0x1FFF	-	    WRAMのミラー
-		return 0
-	} else if address < 0x4000 {
-		// 0x2000～0x2007	0x0008	PPU レジスタ
-		// 0x2008～0x3FFF	-	    PPUレジスタのミラー
-		registerNumber := (address - 0x2000) % 8
-		switch registerNumber {
-		case 7:
-			return c.PPU.Read()
-		}
-		return 0
-	}
-	if address >= 0x8000 {
-		return c.memory[address]
-	}
-	return 0
+	return c.bus.Read(address)
 }
 
 // updateStatusRegister updates status register.

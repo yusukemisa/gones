@@ -12,21 +12,22 @@ import (
 // Physically a wire is essential, but as an emulator program it is not necessary to implement it,
 // because it can be used to access memory in the CPU structure.
 // But it’s useful to keep the code clean.
-type bus struct {
+type Bus struct {
 	cpuRAM []byte // 11bit = 2048 = 0x0800
 	rom    *rom.Rom
 	ppu    *ppu.PPU
 	debug  bool
 }
 
-func NewBus(debug bool) *bus {
-	return &bus{
+func NewBus(debug bool, rom *rom.Rom) *Bus {
+	return &Bus{
 		cpuRAM: make([]byte, 0x0800),
+		rom:    rom,
 		debug:  debug,
 	}
 }
 
-func (b *bus) Read(address uint16) byte {
+func (b *Bus) Read(address uint16) byte {
 	if b.debug {
 		return b.cpuRAM[address]
 	}
@@ -59,7 +60,7 @@ func (b *bus) Read(address uint16) byte {
 	return 0
 }
 
-func (b *bus) write(address uint16, data byte) {
+func (b *Bus) Write(address uint16, data byte) {
 	if 0 <= address && address < 0x2000 {
 		mirrorDownAddress := address & 0b0000011111111111
 		b.cpuRAM[mirrorDownAddress] = data
@@ -67,7 +68,14 @@ func (b *bus) write(address uint16, data byte) {
 	}
 	if 0x2000 <= address && address < 0x4000 {
 		mirrorDownAddress := address & 0b0000000000000111
-		b.cpuRAM[mirrorDownAddress] = data
+		switch address {
+		case 6:
+			b.ppu.WriteAddress(data)
+		case 7:
+			b.ppu.WriteData(data)
+		default:
+			b.cpuRAM[mirrorDownAddress] = data
+		}
 		return
 	}
 	fmt.Printf("unexpected memory addresses=%#04v, data=%#02x\n", address, data)

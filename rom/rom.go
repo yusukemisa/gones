@@ -36,7 +36,6 @@ func NewRom(nesFile *os.File) *Rom {
 	if _, err := cr.Read(CHRROM); err != nil {
 		log.Fatal(err)
 	}
-
 	return &Rom{
 		PRG: PRGROM,
 		CHR: CHRROM,

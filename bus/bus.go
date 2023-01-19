@@ -19,9 +19,10 @@ type Bus struct {
 	debug  bool
 }
 
-func NewBus(debug bool, rom *rom.Rom) *Bus {
+func NewBus(debug bool, rom *rom.Rom, ppu *ppu.PPU) *Bus {
 	return &Bus{
 		cpuRAM: make([]byte, 0x0800),
+		ppu:    ppu,
 		rom:    rom,
 		debug:  debug,
 	}
@@ -42,10 +43,8 @@ func (b *Bus) Read(address uint16) byte {
 	// 0x2000～0x2007	0x0008	PPU レジスタ
 	// 0x2008～0x3FFF	-	    PPUレジスタのミラー
 	if 0x2000 <= address && address < 0x4000 {
-		//let _mirror_down_addr = addr & 0b00100000_00000111;
-		registerNumber := address & 0b0000_0000_0000_0111
-		switch registerNumber {
-		case 7:
+		switch address {
+		case 0x2007:
 			return b.ppu.Read()
 		}
 		return 0
@@ -62,19 +61,26 @@ func (b *Bus) Read(address uint16) byte {
 
 func (b *Bus) Write(address uint16, data byte) {
 	if 0 <= address && address < 0x2000 {
-		mirrorDownAddress := address & 0b0000011111111111
+		mirrorDownAddress := address & 0b0000_0111_1111_1111
 		b.cpuRAM[mirrorDownAddress] = data
 		return
 	}
 	if 0x2000 <= address && address < 0x4000 {
-		mirrorDownAddress := address & 0b0000000000000111
 		switch address {
-		case 6:
+		case 0x2000:
+			b.ppu.WriteControl(data)
+		case 0x2001:
+			b.ppu.WriteMask(data)
+		case 0x2005:
+			b.ppu.WriteScroll(data)
+		case 0x2006:
 			b.ppu.WriteAddress(data)
-		case 7:
+		case 0x2007:
 			b.ppu.WriteData(data)
 		default:
-			b.cpuRAM[mirrorDownAddress] = data
+			mirrorDownAddress := address & 0b0010_0000_0000_0111
+			fmt.Printf("mirrorDownAddress:%#04x,%#04x\n", mirrorDownAddress, address)
+			b.Write(mirrorDownAddress, data)
 		}
 		return
 	}

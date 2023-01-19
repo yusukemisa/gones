@@ -36,13 +36,14 @@ type CPU struct {
 }
 
 func NewCPU(rom *rom.Rom) *CPU {
+	p := ppu.NewPPU(rom.CHR, false)
 	cpu := &CPU{
 		register: &Register{
 			PC: 0x8000,
 		},
 		memory: make([]byte, 0x10000),
-		PPU:    ppu.NewPPU(rom.CHR),
-		bus:    bus.NewBus(false, rom),
+		PPU:    p,
+		bus:    bus.NewBus(false, rom, p),
 	}
 
 	for b := 0; b < len(rom.PRG); b++ {
@@ -173,16 +174,8 @@ func (c *CPU) exec(inst *instruction) {
 	//fmt.Printf("A:%#02x,X:%#02x,Y:%#02x,PC:%#04x\n", c.register.A, c.register.X, c.register.Y, c.register.PC)
 }
 
-// TODO:Bus導入
 func (c *CPU) write(address uint16, data byte) {
-	switch address {
-	case 0x2006:
-		c.PPU.WriteAddress(data)
-	case 0x2007:
-		c.PPU.WriteData(data)
-	default:
-		c.memory[address] = data
-	}
+	c.bus.Write(address, data)
 }
 
 func (c *CPU) read(address uint16) byte {

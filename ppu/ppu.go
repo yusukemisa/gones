@@ -12,7 +12,7 @@ const (
 	windowWidth, windowHeight = 256, 240
 )
 
-type PPURegister struct {
+type register struct {
 	// Control
 	CTRL   byte // 0x2000 割り込み
 	MASK   byte // 0x2001 背景イネーブル
@@ -44,8 +44,14 @@ type Tile struct {
 	c    color.RGBA
 }
 
-func NewPPU(CHRROM []byte) *PPU {
-
+func NewPPU(CHRROM []byte, debug bool) *PPU {
+	if debug {
+		return &PPU{
+			address:  &AddressRegister{},
+			memory:   append(CHRROM, make([]byte, 0x2000)...),
+			register: &register{},
+		}
+	}
 	// Spriteの初期化
 	sprites := make(map[int][]byte)
 	var count int
@@ -77,10 +83,11 @@ func NewPPU(CHRROM []byte) *PPU {
 	//printSprite(sprites[0x48])
 
 	return &PPU{
-		address: &AddressRegister{},
-		memory:  append(CHRROM, make([]byte, 0x2000)...),
-		sprites: sprites,
-		Canvas:  can,
+		address:  &AddressRegister{},
+		memory:   append(CHRROM, make([]byte, 0x2000)...),
+		sprites:  sprites,
+		register: &register{},
+		Canvas:   can,
 	}
 }
 
@@ -136,7 +143,7 @@ type PPU struct {
 	internalDataBuf byte
 	address         *AddressRegister
 
-	register *PPURegister
+	register *register
 	// memory map
 	// Address          Size    Usage
 	// 0x0000～0x0FFF	0x1000	パターンテーブル0
@@ -166,6 +173,18 @@ func (p *PPU) Read() byte {
 	result := p.internalDataBuf
 	p.internalDataBuf = p.memory[addr]
 	return result
+}
+
+func (p *PPU) WriteControl(data byte) {
+	p.register.CTRL = data
+}
+
+func (p *PPU) WriteMask(data byte) {
+	p.register.MASK = data
+}
+
+func (p *PPU) WriteScroll(data byte) {
+	p.register.SCROLL = data
 }
 
 func (p *PPU) WriteAddress(data byte) {

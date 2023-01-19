@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	
+	"github.com/yusukemisa/gones/ppu"
+	"github.com/yusukemisa/gones/util"
 )
 
 type CPU struct {
@@ -23,7 +26,7 @@ type CPU struct {
 	//TODO: memoryはBusを通じてR/Wする
 	memory []byte
 	//TODO: PPUはBusを通じてR/Wする
-	ppu *PPU
+	ppu *ppu.PPU
 
 	// test時は任意のメモリマップにしたい
 	debug bool
@@ -138,7 +141,7 @@ func (c *CPU) exec(inst *instruction) {
 		if inst.mode == "Relative" {
 			// 分岐するしないに関係なくPCが2byte回る必要ある
 			relAddr := int8(c.fetch())
-			if !testBit(c.register.P, 1) {
+			if !util.TestBit(c.register.P, 1) {
 				// uint8で取得した値を-128~127の範囲にキャストしてアドレスを計算
 				// 0xFFの場合アドレスを-1することになる
 				addr := int(relAddr) + int(c.register.PC)
@@ -155,9 +158,9 @@ func (c *CPU) exec(inst *instruction) {
 func (c *CPU) write(address uint16, data byte) {
 	switch address {
 	case 0x2006:
-		c.ppu.writeAddress(data)
+		c.ppu.WriteAddress(data)
 	case 0x2007:
-		c.ppu.writeData(data)
+		c.ppu.WriteData(data)
 	default:
 		c.memory[address] = data
 	}
@@ -177,7 +180,7 @@ func (c *CPU) read(address uint16) byte {
 		registerNumber := (address - 0x2000) % 8
 		switch registerNumber {
 		case 7:
-			return c.ppu.read()
+			return c.ppu.Read()
 		}
 		return 0
 	}
@@ -194,29 +197,17 @@ func (c *CPU) read(address uint16) byte {
 func (c *CPU) updateStatusRegister(result byte) {
 	// bit1	Z
 	if result == 0 {
-		c.register.P = setBit(c.register.P, 1)
+		c.register.P = util.SetBit(c.register.P, 1)
 	} else {
-		c.register.P = clearBit(c.register.P, 1)
+		c.register.P = util.ClearBit(c.register.P, 1)
 	}
 
 	// Bit7 N
 	// Aの最上部bitの値とのORをとる
-	if testBit(result, 7) {
-		c.register.P = setBit(c.register.P, 7)
+	if util.TestBit(result, 7) {
+		c.register.P = util.SetBit(c.register.P, 7)
 	} else {
-		c.register.P = clearBit(c.register.P, 7)
+		c.register.P = util.ClearBit(c.register.P, 7)
 	}
 	//fmt.Printf("result=%#02x,Z=%v,N=%v\n", result, testBit(c.register.P, 1), testBit(c.register.P, 7))
-}
-
-func testBit(x, n byte) bool {
-	return x&(1<<n) != 0
-}
-
-func setBit(x, n byte) byte {
-	return x | (1 << n)
-}
-
-func clearBit(x, n byte) byte {
-	return x &^ (1 << n)
 }

@@ -1,4 +1,4 @@
-package main
+package ppu
 
 // https://bugzmanov.github.io/nes_ebook/chapter_6_3.html
 var palette = [][3]byte{

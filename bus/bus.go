@@ -13,9 +13,8 @@ import (
 // But it’s useful to keep the code clean.
 type bus struct {
 	cpuRAM []byte // 11bit = 2048 = 0x0800
-
-	rom   *rom.Rom
-	debug bool
+	rom    *rom.Rom
+	debug  bool
 }
 
 func NewBus(debug bool) *bus {

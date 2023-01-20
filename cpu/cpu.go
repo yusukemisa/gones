@@ -35,15 +35,15 @@ type CPU struct {
 	debug bool
 }
 
-func NewCPU(rom *rom.Rom) *CPU {
-	p := ppu.NewPPU(rom.CHR, false)
+func NewCPU(rom *rom.Rom, debug bool) *CPU {
+	p := ppu.NewPPU(rom.CHR, debug)
 	cpu := &CPU{
 		register: &Register{
 			PC: 0x8000,
 		},
 		memory: make([]byte, 0x10000),
 		PPU:    p,
-		bus:    bus.NewBus(false, rom, p),
+		bus:    bus.NewBus(rom, p),
 	}
 
 	for b := 0; b < len(rom.PRG); b++ {
@@ -148,9 +148,9 @@ func (c *CPU) exec(inst *instruction) {
 		c.updateStatusRegister(c.register.X)
 	case "INC":
 		if inst.mode == "ZeroPageX" {
-			//fmt.Printf("PC=%#04x,X=%#04x\n", c.PC, uint16(c.X))
+			//fmt.Printf("PC=%#04x,X=%#04x\n", c.register.PC, uint16(c.register.X))
 			addr := c.register.PC + uint16(c.register.X)
-			//fmt.Printf("addr=%#04x\n", addr)
+			fmt.Printf("addr=%#04x\n", addr)
 			c.write(addr, c.read(addr)+1)
 			c.updateStatusRegister(c.read(addr))
 		}

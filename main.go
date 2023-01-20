@@ -15,7 +15,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	run(cpu.NewCPU(rom.NewRom(f)))
+	run(cpu.NewCPU(rom.NewRom(f), false))
 }
 
 func run(cpu *cpu.CPU) {

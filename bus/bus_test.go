@@ -10,7 +10,7 @@ import (
 func TestBus_Read(t *testing.T) {
 	t.Parallel()
 
-	bus := NewBus(true, nil, nil)
+	bus := NewBus(nil, nil)
 	for i := 0; i < 0x0800; i++ {
 		bus.cpuRAM[i] = byte(i & 0b11111111)
 	}
@@ -47,7 +47,7 @@ func TestBus_Write(t *testing.T) {
 	} {
 		tt := tt
 		t.Run(fmt.Sprintf("Write:address=%#04x,data=%#02x", tt.address, tt.data), func(t *testing.T) {
-			bus := NewBus(false, nil, ppu.NewPPU([]byte{}, true))
+			bus := NewBus(nil, ppu.NewPPU([]byte{}, true))
 			if want, got := byte(0), bus.Read(tt.address); want != got {
 				t.Errorf("want=%v, got=%v", want, got)
 			}

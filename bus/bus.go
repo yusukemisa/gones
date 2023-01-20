@@ -16,22 +16,17 @@ type Bus struct {
 	cpuRAM []byte // 11bit = 2048 = 0x0800
 	rom    *rom.Rom
 	ppu    *ppu.PPU
-	debug  bool
 }
 
-func NewBus(debug bool, rom *rom.Rom, ppu *ppu.PPU) *Bus {
+func NewBus(rom *rom.Rom, ppu *ppu.PPU) *Bus {
 	return &Bus{
 		cpuRAM: make([]byte, 0x0800),
 		ppu:    ppu,
 		rom:    rom,
-		debug:  debug,
 	}
 }
 
 func (b *Bus) Read(address uint16) byte {
-	if b.debug {
-		return b.cpuRAM[address]
-	}
 	// 0x0000～0x07FF	0x0800	WRAM
 	// 0x0800～0x0FFF	-	    WRAMのミラー1
 	// 0x1000～0x17FF	-	    WRAMのミラー2
@@ -79,10 +74,13 @@ func (b *Bus) Write(address uint16, data byte) {
 			b.ppu.WriteData(data)
 		default:
 			mirrorDownAddress := address & 0b0010_0000_0000_0111
-			fmt.Printf("mirrorDownAddress:%#04x,%#04x\n", mirrorDownAddress, address)
+			//fmt.Printf("mirrorDownAddress:%#04x,%#04x\n", mirrorDownAddress, address)
 			b.Write(mirrorDownAddress, data)
 		}
 		return
+	}
+	if 0x8000 <= address && address < 0xFFFF {
+		panic(fmt.Sprintf("attempt to write to PRG rom:%#04v", address))
 	}
 	fmt.Printf("unexpected memory addresses=%#04v, data=%#02x\n", address, data)
 }

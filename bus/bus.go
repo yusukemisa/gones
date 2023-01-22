@@ -3,6 +3,7 @@ package bus
 import (
 	"fmt"
 
+	"github.com/yusukemisa/gones/ppu"
 	"github.com/yusukemisa/gones/rom"
 )
 
@@ -11,23 +12,34 @@ import (
 // Physically a wire is essential, but as an emulator program it is not necessary to implement it,
 // because it can be used to access memory in the CPU structure.
 // But it’s useful to keep the code clean.
-type bus struct {
+type Bus struct {
+	// memory map
+	// Address          Size    Usage
+	// 0x0000～0x07FF	0x0800	WRAM
+	// 0x0800～0x0FFF	-	    WRAMのミラー1
+	// 0x1000～0x17FF	-	    WRAMのミラー2
+	// 0x1800～0x1FFF	-	    WRAMのミラー3
+	// 0x2000～0x2007	0x0008	PPU レジスタ
+	// 0x2008～0x3FFF	-	    PPUレジスタのミラー
+	// 0x4000～0x401F	0x0020	APU I/O、PAD
+	// 0x4020～0x5FFF	0x1FE0	拡張ROM
+	// 0x6000～0x7FFF	0x2000	拡張RAM
+	// 0x8000～0xBFFF	0x4000	PRG-ROM
+	// 0xC000～0xFFFF	0x4000	PRG-ROM
 	cpuRAM []byte // 11bit = 2048 = 0x0800
 	rom    *rom.Rom
-	debug  bool
+	ppu    *ppu.PPU
 }
 
-func NewBus(debug bool) *bus {
-	return &bus{
+func NewBus(rom *rom.Rom, ppu *ppu.PPU) *Bus {
+	return &Bus{
 		cpuRAM: make([]byte, 0x0800),
-		debug:  debug,
+		ppu:    ppu,
+		rom:    rom,
 	}
 }
 
-func (b *bus) Read(address uint16) byte {
-	if b.debug {
-		return b.cpuRAM[address]
-	}
+func (b *Bus) Read(address uint16) byte {
 	// 0x0000～0x07FF	0x0800	WRAM
 	// 0x0800～0x0FFF	-	    WRAMのミラー1
 	// 0x1000～0x17FF	-	    WRAMのミラー2
@@ -39,11 +51,9 @@ func (b *bus) Read(address uint16) byte {
 	// 0x2000～0x2007	0x0008	PPU レジスタ
 	// 0x2008～0x3FFF	-	    PPUレジスタのミラー
 	if 0x2000 <= address && address < 0x4000 {
-		//let _mirror_down_addr = addr & 0b00100000_00000111;
-		registerNumber := address & 0b0000_0000_0000_0111
-		switch registerNumber {
-		case 7:
-			//return b.ppu.read()
+		switch address {
+		case 0x2007:
+			return b.ppu.Read()
 		}
 		return 0
 	}
@@ -57,16 +67,33 @@ func (b *bus) Read(address uint16) byte {
 	return 0
 }
 
-func (b *bus) write(address uint16, data byte) {
+func (b *Bus) Write(address uint16, data byte) {
 	if 0 <= address && address < 0x2000 {
-		mirrorDownAddress := address & 0b0000011111111111
+		mirrorDownAddress := address & 0b0000_0111_1111_1111
 		b.cpuRAM[mirrorDownAddress] = data
 		return
 	}
 	if 0x2000 <= address && address < 0x4000 {
-		mirrorDownAddress := address & 0b0000000000000111
-		b.cpuRAM[mirrorDownAddress] = data
+		switch address {
+		case 0x2000:
+			b.ppu.WriteControl(data)
+		case 0x2001:
+			b.ppu.WriteMask(data)
+		case 0x2005:
+			b.ppu.WriteScroll(data)
+		case 0x2006:
+			b.ppu.WriteAddress(data)
+		case 0x2007:
+			b.ppu.WriteData(data)
+		default:
+			mirrorDownAddress := address & 0b0010_0000_0000_0111
+			//fmt.Printf("mirrorDownAddress:%#04x,%#04x\n", mirrorDownAddress, address)
+			b.Write(mirrorDownAddress, data)
+		}
 		return
+	}
+	if 0x8000 <= address && address < 0xFFFF {
+		panic(fmt.Sprintf("attempt to write to PRG rom:%#04v", address))
 	}
 	fmt.Printf("unexpected memory addresses=%#04v, data=%#02x\n", address, data)
 }

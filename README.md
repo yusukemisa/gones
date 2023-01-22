@@ -31,8 +31,9 @@ Hello World Rom is a sample rom distributed [here](http://hp.vector.co.jp/author
 
 
 - [x] 背景色表示
-- [ ] Bus実装
+- [x] Bus実装
 - [ ] ジョイパッド実装
+- [ ] [Run nestest.nes](https://www.nesdev.org/wiki/Emulator_tests)
 
 参考
 - [ファミコンエミュレータの創り方　- Hello, World!編 -](https://qiita.com/bokuweb/items/1575337bef44ae82f4d3)

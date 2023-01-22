@@ -4,12 +4,13 @@ Go言語によるファミコンエミュレーター実装
 # Test
 Run gones
 ```
- make run
+$ make build
+$ ./bin/gones 
 ```
 
 Run test
 ```
- make test
+$ make test
 ```
 
 # Road map

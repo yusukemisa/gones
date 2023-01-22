@@ -3,11 +3,11 @@ package main
 import (
 	"log"
 	"os"
-
-	"github.com/veandco/go-sdl2/sdl"
+	"time"
 
 	"github.com/yusukemisa/gones/bus"
 	"github.com/yusukemisa/gones/cpu"
+	"github.com/yusukemisa/gones/joypad"
 	"github.com/yusukemisa/gones/ppu"
 	"github.com/yusukemisa/gones/rom"
 )
@@ -22,23 +22,20 @@ func main() {
 	ppu := ppu.NewPPU(rom.CHR, false)
 	cpu := cpu.NewCPU(bus.NewBus(rom, ppu))
 
-	run(cpu, ppu)
+	run(cpu, ppu, &joypad.Joypad{})
 }
 
-func run(cpu *cpu.CPU, ppu *ppu.PPU) {
+func run(cpu *cpu.CPU, ppu *ppu.PPU, joyPad *joypad.Joypad) {
 	for {
 		cycle := cpu.Run()
 		if screen := ppu.Run(cycle * 3); screen != nil {
 			ppu.Canvas.Renderer.Present()
 			ppu.Canvas.Renderer.Clear()
-			sdl.Delay(100)
+			time.Sleep(100 * time.Microsecond)
 		}
-		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
-			switch event.(type) {
-			case *sdl.QuitEvent:
-				println("Quit")
-				return
-			}
+		if quit := joyPad.PollEvent(); quit {
+			println("Quit")
+			return
 		}
 	}
 }

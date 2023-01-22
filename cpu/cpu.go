@@ -5,29 +5,20 @@ import (
 	"log"
 
 	"github.com/yusukemisa/gones/bus"
-	"github.com/yusukemisa/gones/ppu"
-	"github.com/yusukemisa/gones/rom"
 	"github.com/yusukemisa/gones/util"
 )
 
 type CPU struct {
 	register *Register
-	//TODO: PPUはBusを通じてR/Wする
-	PPU *ppu.PPU
-	bus *bus.Bus
-
-	// test時は任意のメモリマップにしたい
-	debug bool
+	bus      *bus.Bus
 }
 
-func NewCPU(rom *rom.Rom, debug bool) *CPU {
-	p := ppu.NewPPU(rom.CHR, debug)
+func NewCPU(bus *bus.Bus) *CPU {
 	cpu := &CPU{
 		register: &Register{
 			PC: 0x8000,
 		},
-		PPU: p,
-		bus: bus.NewBus(rom, p),
+		bus: bus,
 	}
 	return cpu
 }

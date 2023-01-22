@@ -6,7 +6,9 @@ import (
 
 	"github.com/veandco/go-sdl2/sdl"
 
+	"github.com/yusukemisa/gones/bus"
 	"github.com/yusukemisa/gones/cpu"
+	"github.com/yusukemisa/gones/ppu"
 	"github.com/yusukemisa/gones/rom"
 )
 
@@ -15,15 +17,20 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	run(cpu.NewCPU(rom.NewRom(f), false))
+
+	rom := rom.NewRom(f)
+	ppu := ppu.NewPPU(rom.CHR, false)
+	cpu := cpu.NewCPU(bus.NewBus(rom, ppu))
+
+	run(cpu, ppu)
 }
 
-func run(cpu *cpu.CPU) {
+func run(cpu *cpu.CPU, ppu *ppu.PPU) {
 	for {
 		cycle := cpu.Run()
-		if screen := cpu.PPU.Run(cycle * 3); screen != nil {
-			cpu.PPU.Canvas.Renderer.Present()
-			cpu.PPU.Canvas.Renderer.Clear()
+		if screen := ppu.Run(cycle * 3); screen != nil {
+			ppu.Canvas.Renderer.Present()
+			ppu.Canvas.Renderer.Clear()
 			sdl.Delay(100)
 		}
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {

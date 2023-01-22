@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+
+	"github.com/yusukemisa/gones/bus"
 	"github.com/yusukemisa/gones/rom"
 )
 
@@ -217,7 +219,8 @@ func TestCPU_exec(t *testing.T) {
 		tt := tt
 		t.Run(fmt.Sprintf("code=%#02x:%s", tt.opecode, tt.name), func(t *testing.T) {
 			rom := &rom.Rom{PRG: tt.param}
-			cpu := NewCPU(rom, true)
+
+			cpu := NewCPU(bus.NewBus(rom, nil))
 			cpu.register = tt.orgRegister
 
 			cpu.exec(opecodes[tt.opecode])

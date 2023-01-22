@@ -1,5 +1,5 @@
 # gones
-Go言語によるファミコンエミュレーター実装
+NES emulator implementation in Go language / Go言語によるファミコンエミュレーター実装 
 
 # Test
 Run gones

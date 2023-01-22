@@ -3,6 +3,7 @@ package bus
 import (
 	"fmt"
 
+	"github.com/yusukemisa/gones/joypad"
 	"github.com/yusukemisa/gones/ppu"
 	"github.com/yusukemisa/gones/rom"
 )
@@ -29,13 +30,16 @@ type Bus struct {
 	cpuRAM []byte // 11bit = 2048 = 0x0800
 	rom    *rom.Rom
 	ppu    *ppu.PPU
+
+	joyPad1 *joypad.Joypad
 }
 
 func NewBus(rom *rom.Rom, ppu *ppu.PPU) *Bus {
 	return &Bus{
-		cpuRAM: make([]byte, 0x0800),
-		ppu:    ppu,
-		rom:    rom,
+		cpuRAM:  make([]byte, 0x0800),
+		ppu:     ppu,
+		rom:     rom,
+		joyPad1: &joypad.Joypad{},
 	}
 }
 
@@ -55,6 +59,15 @@ func (b *Bus) Read(address uint16) byte {
 		case 0x2007:
 			return b.ppu.Read()
 		}
+		return 0
+	}
+	// 1P JoyPad
+	if address == 0x4016 {
+		return b.joyPad1.Read()
+	}
+	// 2P JoyPad
+	if address == 0x4017 {
+		// TODO
 		return 0
 	}
 	// 0x8000～0xBFFF	0x4000	PRG-ROM
@@ -91,6 +104,9 @@ func (b *Bus) Write(address uint16, data byte) {
 			b.Write(mirrorDownAddress, data)
 		}
 		return
+	}
+	if address == 0x4016 {
+		b.joyPad1.Write(data)
 	}
 	if 0x8000 <= address && address < 0xFFFF {
 		panic(fmt.Sprintf("attempt to write to PRG rom:%#04v", address))

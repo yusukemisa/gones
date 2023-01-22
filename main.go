@@ -22,10 +22,10 @@ func main() {
 	ppu := ppu.NewPPU(rom.CHR, false)
 	cpu := cpu.NewCPU(bus.NewBus(rom, ppu))
 
-	run(cpu, ppu)
+	run(cpu, ppu, &joypad.Joypad{})
 }
 
-func run(cpu *cpu.CPU, ppu *ppu.PPU) {
+func run(cpu *cpu.CPU, ppu *ppu.PPU, joyPad *joypad.Joypad) {
 	for {
 		cycle := cpu.Run()
 		if screen := ppu.Run(cycle * 3); screen != nil {
@@ -33,7 +33,7 @@ func run(cpu *cpu.CPU, ppu *ppu.PPU) {
 			ppu.Canvas.Renderer.Clear()
 			time.Sleep(100 * time.Microsecond)
 		}
-		if quit := joypad.PollEvent(); quit {
+		if quit := joyPad.PollEvent(); quit {
 			println("Quit")
 			return
 		}

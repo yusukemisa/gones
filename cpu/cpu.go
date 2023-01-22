@@ -150,7 +150,6 @@ func (c *CPU) exec(inst *instruction) {
 		if inst.mode == "ZeroPageX" {
 			//fmt.Printf("PC=%#04x,X=%#04x\n", c.register.PC, uint16(c.register.X))
 			addr := c.register.PC + uint16(c.register.X)
-			fmt.Printf("addr=%#04x\n", addr)
 			c.write(addr, c.read(addr)+1)
 			c.updateStatusRegister(c.read(addr))
 		}

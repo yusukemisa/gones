@@ -187,59 +187,32 @@ func TestCPU_exec(t *testing.T) {
 			address:  0x0001,
 			wantData: 0x01,
 		},
-
-		//"INC_Implied(0xF6)": {
-		//			in: &CPU{
-		//				register: &Register{
-		//					X: 0x03,
-		//				},
-		//				memory: []byte{0xF6, 0x02, 0x00, 0xAA, 0xFE, 0x00},
-		//			},
-		//			out: &CPU{
-		//				register: &Register{
-		//					X:  0x03,
-		//					PC: 0x01,
-		//					P:  0b10000000,
-		//				},
-		//				memory: []byte{0xF6, 0x02, 0x00, 0xAA, 0xFF, 0x00},
-		//			},
-		//		},
-		//		"BNE_Relative(0xD0)_jump": {
-		//			in: &CPU{
-		//				register: &Register{
-		//					X:  0x03,
-		//					PC: 0x03,
-		//					P:  0b11111101, // N,Z: not affected
-		//				},
-		//				memory: []byte{0x00, 0x00, 0x00, 0xD0, 0xFD, 0x00, 0xAA, 0xBB, 0xCC},
-		//			},
-		//			out: &CPU{
-		//				register: &Register{
-		//					X:  0x03,
-		//					PC: 0x02,
-		//					P:  0b11111101,
-		//				},
-		//				memory: []byte{0x00, 0x00, 0x00, 0xD0, 0xFD, 0x00, 0xAA, 0xBB, 0xCC},
-		//			},
-		//		},
-		//		"BNE_Relative(0xD0)_no jump": {
-		//			in: &CPU{
-		//				register: &Register{
-		//					X:  0x03,
-		//					PC: 0x03,
-		//					P:  0b11111111, // N,Z: not affected
-		//				},
-		//				memory: []byte{0x00, 0x00, 0x00, 0xD0, 0xFD, 0x00, 0xAA, 0xBB, 0xCC},
-		//			},
-		//			out: &CPU{
-		//				register: &Register{
-		//					X:  0x03,
-		//					PC: 0x05,
-		//					P:  0b11111111,
-		//				},
-		//				memory: []byte{0x00, 0x00, 0x00, 0xD0, 0xFD, 0x00, 0xAA, 0xBB, 0xCC},
-		//			},
-		//		},
+		{
+			opecode: 0xD0, // ステータスレジスタのZがクリアされている場合アドレス「PC + IM8」へジャンプ
+			name:    "BNE_Relative",
+			param:   []byte{0x0A},
+			orgRegister: &Register{
+				P:  0b11111101, // only Z cleared
+				PC: 0x8000,
+			},
+			wantRegister: &Register{
+				P:  0b11111101,
+				PC: 0x800B,
+			},
+		},
+		{
+			opecode: 0xD0, // ステータスレジスタのZがクリアされている場合アドレス「PC + IM8」へジャンプ
+			name:    "BNE_Relative_no_jump",
+			param:   []byte{0x0A},
+			orgRegister: &Register{
+				P:  0b11111111,
+				PC: 0x8000,
+			},
+			wantRegister: &Register{
+				P:  0b11111111,
+				PC: 0x8001,
+			},
+		},
 	} {
 		tt := tt
 		t.Run(fmt.Sprintf("code=%#02x:%s", tt.opecode, tt.name), func(t *testing.T) {
@@ -259,5 +232,4 @@ func TestCPU_exec(t *testing.T) {
 			}
 		})
 	}
-
 }

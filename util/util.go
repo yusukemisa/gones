@@ -1,5 +1,6 @@
 package util
 
+// TestBit tests if the n bit of x is ON
 func TestBit(x, n byte) bool {
 	return x&(1<<n) != 0
 }

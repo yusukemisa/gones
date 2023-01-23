@@ -93,9 +93,10 @@ func (c *CPU) exec(inst *instruction) {
 		l, h := uint16(c.fetch()), uint16(c.fetch())
 		c.pushAddressToStack(c.register.PC - 1)
 		c.register.PC = l | h<<8
-
 	case "SEC":
 		c.register.P = util.SetBit(c.register.P, 0)
+	case "CLC":
+		c.register.P = util.ClearBit(c.register.P, 0)
 	case "SEI":
 		// IRQ割り込み禁止
 		// bit2を立てる
@@ -126,6 +127,10 @@ func (c *CPU) exec(inst *instruction) {
 			l, h := uint16(c.fetch()), uint16(c.fetch())
 			c.write(l|h<<8, c.register.A)
 		}
+		if inst.mode == "ZeroPage" {
+			l, h := uint16(c.fetch()), uint16(0x00)
+			c.write(l|h<<8, c.register.A)
+		}
 	case "STX":
 		if inst.mode == "ZeroPage" {
 			l, h := uint16(c.fetch()), uint16(0x00)
@@ -152,6 +157,12 @@ func (c *CPU) exec(inst *instruction) {
 			addr := int(relAddr) + int(c.register.PC)
 			c.register.PC = uint16(addr)
 		}
+	case "BCC":
+		relAddr := int8(c.fetch())
+		if !util.TestBit(c.register.P, 0) {
+			addr := int(relAddr) + int(c.register.PC)
+			c.register.PC = uint16(addr)
+		}
 	case "BNE":
 		if inst.mode == "Relative" {
 			// 分岐するしないに関係なくPCが2byte回る必要ある
@@ -159,6 +170,14 @@ func (c *CPU) exec(inst *instruction) {
 			if !util.TestBit(c.register.P, 1) {
 				// uint8で取得した値を-128~127の範囲にキャストしてアドレスを計算
 				// 0xFFの場合アドレスを-1することになる
+				addr := int(relAddr) + int(c.register.PC)
+				c.register.PC = uint16(addr)
+			}
+		}
+	case "BEQ": // ステータスレジスタのZがセットされている場合アドレス「PC + IM8」へジャンプ"
+		if inst.mode == "Relative" {
+			relAddr := int8(c.fetch())
+			if util.TestBit(c.register.P, 1) {
 				addr := int(relAddr) + int(c.register.PC)
 				c.register.PC = uint16(addr)
 			}

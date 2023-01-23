@@ -43,6 +43,19 @@ func TestCPU_exec(t *testing.T) {
 			wantRegister: &Register{PC: 0x80FF},
 		},
 		{
+			opecode: 0x18,
+			name:    "CLC",
+			param:   []byte{},
+			orgRegister: &Register{
+				PC: 0x8000,
+				P:  0b00000001,
+			},
+			wantRegister: &Register{
+				PC: 0x8000,
+				P:  0b00000000,
+			},
+		},
+		{
 			opecode:     0x38,
 			name:        "SEC",
 			param:       []byte{},
@@ -125,6 +138,22 @@ func TestCPU_exec(t *testing.T) {
 			wantRegister: &Register{
 				A:  0xAA,
 				PC: 0x8002,
+				P:  0b00000000, //N,Z: not affected
+			},
+			address:  0x0003,
+			wantData: 0xAA,
+		},
+		{
+			opecode: 0x85, // Aの内容をアドレス「MI8 | 0x00<<8 」に書き込む.
+			name:    "STA_ZeroPage",
+			param:   []byte{0x03},
+			orgRegister: &Register{
+				PC: 0x8000,
+				A:  0xAA,
+			},
+			wantRegister: &Register{
+				A:  0xAA,
+				PC: 0x8001,
 				P:  0b00000000, //N,Z: not affected
 			},
 			address:  0x0003,
@@ -252,6 +281,84 @@ func TestCPU_exec(t *testing.T) {
 			},
 			wantRegister: &Register{
 				P:  0b11111111,
+				PC: 0x8001,
+			},
+		},
+		{
+			opecode: 0xB0, // キャリーフラグがセットされている場合アドレス「PC + IM8」へ分岐
+			name:    "BCS_branch",
+			param:   []byte{0x10},
+			orgRegister: &Register{
+				P:  0b11111111,
+				PC: 0x8000,
+			},
+			wantRegister: &Register{
+				P:  0b11111111,
+				PC: 0x8011,
+			},
+		},
+		{
+			opecode: 0xB0, // キャリーフラグがセットされている場合アドレス「PC + IM8」へ分岐
+			name:    "BCS_not_branch",
+			param:   []byte{0x10},
+			orgRegister: &Register{
+				P:  0b00000000,
+				PC: 0x8000,
+			},
+			wantRegister: &Register{
+				P:  0b00000000,
+				PC: 0x8001,
+			},
+		},
+		{
+			opecode: 0x90, // キャリーフラグがクリアされている場合アドレス「PC + IM8」へ分岐
+			name:    "BCC_branch",
+			param:   []byte{0x10},
+			orgRegister: &Register{
+				P:  0b00000000,
+				PC: 0x8000,
+			},
+			wantRegister: &Register{
+				P:  0b00000000,
+				PC: 0x8011,
+			},
+		},
+		{
+			opecode: 0x90,
+			name:    "BCC_not_branch",
+			param:   []byte{0x10},
+			orgRegister: &Register{
+				P:  0b11111111,
+				PC: 0x8000,
+			},
+			wantRegister: &Register{
+				P:  0b11111111,
+				PC: 0x8001,
+			},
+		},
+		{
+			opecode: 0xF0, // ステータスレジスタのZがクリアされている場合アドレス「PC + IM8」へジャンプ",
+			name:    "BEQ_Relative_branch",
+			param:   []byte{0x10},
+			orgRegister: &Register{
+				P:  0b0000_0010,
+				PC: 0x8000,
+			},
+			wantRegister: &Register{
+				P:  0b0000_0010,
+				PC: 0x8011,
+			},
+		},
+		{
+			opecode: 0xF0,
+			name:    "BEQ_Relative_not_branch",
+			param:   []byte{0x10},
+			orgRegister: &Register{
+				P:  0b0000_0000,
+				PC: 0x8000,
+			},
+			wantRegister: &Register{
+				P:  0b0000_0000,
 				PC: 0x8001,
 			},
 		},

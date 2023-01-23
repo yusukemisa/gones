@@ -12,6 +12,17 @@ var opecodes = map[byte]*instruction{
 		// N: not affected
 		// B: Set to 1
 	},
+	0x18: {
+		code:        0x18,
+		name:        "CLC", // Clear carry flag
+		mode:        "Implied",
+		description: "Set the carry flag to 0",
+		cycle:       2,
+		// Z: not affected
+		// N: not affected
+		// C: set to 0
+		// bytes:1
+	},
 	0x20: {
 		code:        0x20,
 		name:        "JSR", // Jump to subroutine
@@ -55,6 +66,26 @@ var opecodes = map[byte]*instruction{
 		name:        "STX",
 		mode:        "ZeroPage", // 0x00を上位アドレス、PCに格納された値を下位アドレスとした番地を演算対象とする
 		description: "Stores the contents of the X register into memory",
+		cycle:       3,
+		// Z: not affected
+		// N: not affected
+		// bytes:2
+	},
+	0x90: {
+		code:        0x90,
+		name:        "BCC", // Branch if Carry Clear
+		mode:        "Relative",
+		description: "If the carry flag is clear then add the relative displacement to the program counter to cause a branch to a new location.",
+		cycle:       2, // 2 (+1 if branch succeeds +2 if to a new page)
+		// Z: not affected
+		// N: not affected
+		// bytes:2
+	},
+	0x85: {
+		code:        0x85,
+		name:        "STA",
+		mode:        "ZeroPage",
+		description: "Aの内容をアドレス「MI8 | 0x00<<8 」に書き込む",
 		cycle:       3,
 		// Z: not affected
 		// N: not affected
@@ -165,10 +196,11 @@ var opecodes = map[byte]*instruction{
 		code:        0xF0,
 		name:        "BEQ",
 		mode:        "Relative",
-		description: "Branch on equal 0. ステータスレジスタのZがセットされている時に分岐.",
-		cycle:       3, // 4の場合もある
+		description: "Branch on equal 0. ステータスレジスタのZがセットされている場合アドレス「PC + IM8」へジャンプ",
+		cycle:       3, // 2 (+1 if branch succeeds +2 if to a new page)
 		// Z: not affected
 		// N: not affected
+		// bytes:2
 	},
 	0xF6: {
 		code:        0xF6,

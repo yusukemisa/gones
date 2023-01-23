@@ -27,7 +27,12 @@ type Register struct {
 	A byte // アキュムレータ
 	X byte // インデックスレジスタ
 	Y byte // インデックスレジスタ
-	S byte // スタックポインタ
+
+	// スタックポインタ
+	// スタックは割り込みが発生する直前まで実行していたプログラムのPCの値を一時的に格納します。
+	// 割り込み後、スタックに退避させていたアドレスはPCに戻し処理を再開します。
+	// PCは2byte情報なので
+	S byte
 
 	// プログラムカウンタ
 	// CPUはfetch
@@ -59,11 +64,11 @@ type instruction struct {
 // Run is main processing in CPU
 func (c *CPU) Run() int {
 	code := c.fetch()
-	//fmt.Printf("i=%d:code:%#02x\n", i, code)
 	inst, ok := opecodes[code]
 	if !ok {
 		log.Fatalf("opecode not found:%#02x", code)
 	}
+	fmt.Printf("inst=%#v\n", inst)
 
 	c.exec(inst)
 	// 分岐でcycle数変わる場合があるのでexecが返した方が良い
@@ -79,13 +84,22 @@ func (c *CPU) fetch() byte {
 func (c *CPU) exec(inst *instruction) {
 	//fmt.Printf("%#v, \n", inst)
 	switch inst.name {
+	case "NOP":
 	case "JMP":
 		l, h := uint16(c.fetch()), uint16(c.fetch())
 		c.register.PC = l | h<<8
+	case "JSR":
+		// 今のPCをスタックに退避し、PC=MI16にする
+		l, h := uint16(c.fetch()), uint16(c.fetch())
+		c.pushAddressToStack(c.register.PC - 1)
+		c.register.PC = l | h<<8
+
+	case "SEC":
+		c.register.P = util.SetBit(c.register.P, 0)
 	case "SEI":
 		// IRQ割り込み禁止
 		// bit2を立てる
-		c.register.P = c.register.P + 4
+		c.register.P = util.SetBit(c.register.P, 2)
 	case "LDX":
 		if inst.mode == "Immediate" {
 			c.register.X = c.fetch()
@@ -112,6 +126,11 @@ func (c *CPU) exec(inst *instruction) {
 			l, h := uint16(c.fetch()), uint16(c.fetch())
 			c.write(l|h<<8, c.register.A)
 		}
+	case "STX":
+		if inst.mode == "ZeroPage" {
+			l, h := uint16(c.fetch()), uint16(0x00)
+			c.write(l|h<<8, c.register.X)
+		}
 	case "TXS":
 		c.register.S = c.register.X
 	case "INX":
@@ -127,6 +146,12 @@ func (c *CPU) exec(inst *instruction) {
 	case "DEY":
 		c.register.Y--
 		c.updateStatusRegister(c.register.Y)
+	case "BCS":
+		relAddr := int8(c.fetch())
+		if util.TestBit(c.register.P, 0) {
+			addr := int(relAddr) + int(c.register.PC)
+			c.register.PC = uint16(addr)
+		}
 	case "BNE":
 		if inst.mode == "Relative" {
 			// 分岐するしないに関係なくPCが2byte回る必要ある
@@ -172,4 +197,11 @@ func (c *CPU) updateStatusRegister(result byte) {
 		c.register.P = util.ClearBit(c.register.P, 7)
 	}
 	//fmt.Printf("result=%#02x,Z=%v,N=%v\n", result, testBit(c.register.P, 1), testBit(c.register.P, 7))
+}
+
+func (c *CPU) pushAddressToStack(address uint16) {
+	l, h := address&0x00FF, address>>8
+	c.write(0x0100+uint16(c.register.S), byte(h))
+	c.register.S++
+	c.write(0x0100+uint16(c.register.S), byte(l))
 }

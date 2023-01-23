@@ -22,11 +22,35 @@ func TestCPU_exec(t *testing.T) {
 		wantData     byte
 	}{
 		{
+			opecode: 0x20,
+			name:    "JSR",
+			param:   []byte{0x10, 0x80},
+			orgRegister: &Register{
+				PC: 0x8000,
+			},
+			wantRegister: &Register{
+				PC: 0x8010,
+				S:  0x01,
+			},
+			address:  0x0100,
+			wantData: 0x80,
+		},
+		{
 			opecode:      0x4C,
 			name:         "JMP",
 			param:        []byte{0xFF, 0x80},
 			orgRegister:  &Register{PC: 0x8000},
 			wantRegister: &Register{PC: 0x80FF},
+		},
+		{
+			opecode:     0x38,
+			name:        "SEC",
+			param:       []byte{},
+			orgRegister: &Register{PC: 0x8000},
+			wantRegister: &Register{
+				PC: 0x8000,
+				P:  0b00000001,
+			},
 		},
 		{
 			opecode:     0x78,
@@ -105,6 +129,22 @@ func TestCPU_exec(t *testing.T) {
 			},
 			address:  0x0003,
 			wantData: 0xAA,
+		},
+		{
+			opecode: 0x86, // Xの内容をアドレス「MI8 | 0x00<<8 」に書き込む.
+			name:    "STX_ZeroPage",
+			param:   []byte{0x86},
+			orgRegister: &Register{
+				PC: 0x8000,
+				X:  0xFF,
+			},
+			wantRegister: &Register{
+				X:  0xFF,
+				PC: 0x8001,
+				P:  0b00000000, //N,Z: not affected
+			},
+			address:  0x0086,
+			wantData: 0xFF,
 		},
 		{
 			opecode: 0x9A, // XをSへコピー

@@ -12,6 +12,26 @@ var opecodes = map[byte]*instruction{
 		// N: not affected
 		// B: Set to 1
 	},
+	0x20: {
+		code:        0x20,
+		name:        "JSR", // Jump to subroutine
+		mode:        "Absolute",
+		description: "サブルーチンを呼び出し",
+		cycle:       6,
+		// Z: not affected
+		// N: not affected
+		// bytes:3
+	},
+	0x38: {
+		code:        0x38,
+		name:        "SEC",
+		mode:        "Implied",
+		description: "Set carry flag",
+		cycle:       6,
+		// Z: not affected
+		// N: not affected
+		// bytes:1
+	},
 	0x4C: {
 		code:        0x4C,
 		name:        "JMP",
@@ -29,6 +49,16 @@ var opecodes = map[byte]*instruction{
 		// Z: not affected
 		// I: set to 1
 		// N: not affected
+	},
+	0x86: {
+		code:        0x86,
+		name:        "STX",
+		mode:        "ZeroPage", // 0x00を上位アドレス、PCに格納された値を下位アドレスとした番地を演算対象とする
+		description: "Stores the contents of the X register into memory",
+		cycle:       3,
+		// Z: not affected
+		// N: not affected
+		// bytes:2
 	},
 	0x8D: {
 		code:        0x8D,
@@ -75,6 +105,15 @@ var opecodes = map[byte]*instruction{
 		// Z:Set if A = 0
 		// N:Set if bit 7 of A is set
 	},
+	0xB0: {
+		code:        0xB0,
+		name:        "BCS", // Branch if Carry Set
+		mode:        "Relative",
+		description: "If the carry flag is set then add the relative displacement to the program counter to cause a branch to a new location",
+		cycle:       2,
+		// Z: not affected
+		// N: not affected
+	},
 	0xBD: {
 		code:        0xBD,
 		name:        "LDA",
@@ -102,6 +141,16 @@ var opecodes = map[byte]*instruction{
 		cycle:       2,
 		// Z:Set if X = 0
 		// N:Set if bit 7 of X is set
+	},
+	0xEA: {
+		code:        0xEA,
+		name:        "NOP",
+		mode:        "Implied",
+		description: "No operation",
+		cycle:       2,
+		// Z: not affected
+		// N: not affected
+		// Bytes:1
 	},
 	0x88: {
 		code:        0x88,

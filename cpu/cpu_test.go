@@ -76,6 +76,21 @@ func TestCPU_exec(t *testing.T) {
 			},
 		},
 		{
+			opecode: 0x24,
+			name:    "BIT", // TODO: 正しいか怪しい・・・
+			param:   []byte{0x01},
+			orgRegister: &Register{
+				PC: 0x8000,
+				A:  0b11111111,
+				P:  0b10100100,
+			},
+			wantRegister: &Register{
+				PC: 0x8001,
+				A:  0b1111_1111,
+				P:  0b00100110,
+			},
+		}, // 10100100
+		{
 			opecode:     0xA9,
 			name:        "LDA(set N)",
 			param:       []byte{0xFF},
@@ -352,6 +367,32 @@ func TestCPU_exec(t *testing.T) {
 		{
 			opecode: 0xF0,
 			name:    "BEQ_Relative_not_branch",
+			param:   []byte{0x10},
+			orgRegister: &Register{
+				P:  0b0000_0000,
+				PC: 0x8000,
+			},
+			wantRegister: &Register{
+				P:  0b0000_0000,
+				PC: 0x8001,
+			},
+		},
+		{
+			opecode: 0x70, // ステータスレジスタのVがセットされている場合アドレス「PC + IM8」へジャンプ",
+			name:    "BVS_Relative_branch",
+			param:   []byte{0x10},
+			orgRegister: &Register{
+				P:  0b0100_0000,
+				PC: 0x8000,
+			},
+			wantRegister: &Register{
+				P:  0b0100_0000,
+				PC: 0x8011,
+			},
+		},
+		{
+			opecode: 0x70, // ステータスレジスタのVがセットされている場合アドレス「PC + IM8」へジャンプ",
+			name:    "BVS_Relative_not_branch",
 			param:   []byte{0x10},
 			orgRegister: &Register{
 				P:  0b0000_0000,

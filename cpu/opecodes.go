@@ -12,6 +12,16 @@ var opecodes = map[byte]*instruction{
 		// N: not affected
 		// B: Set to 1
 	},
+	0x10: {
+		code:        0x10,
+		name:        "BPL", // Branch if Positive
+		mode:        "Relative",
+		description: "ステータスレジスタのNがクリアされている場合アドレス「PC + IM8」へジャンプ",
+		cycle:       2, // 2 (+1 if branch succeeds +2 if to a new page)
+		// Z: not affected
+		// N: not affected
+		// bytes:2
+	},
 	0x18: {
 		code:        0x18,
 		name:        "CLC", // Clear carry flag
@@ -33,6 +43,17 @@ var opecodes = map[byte]*instruction{
 		// N: not affected
 		// bytes:3
 	},
+	0x24: {
+		code:        0x24,
+		name:        "BIT", // Bit Test
+		mode:        "ZeroPage",
+		description: "Aと0x00IM8番地の値をビット比較演算します",
+		cycle:       3,
+		// Z: Set if the result if the AND is zero
+		// V: Set to bit 6 of the memory value
+		// N: Set to bit 7 of the memory value
+		// bytes:2
+	},
 	0x38: {
 		code:        0x38,
 		name:        "SEC",
@@ -51,6 +72,26 @@ var opecodes = map[byte]*instruction{
 		cycle:       3,
 		// Z: not affected
 		// N: not affected
+	},
+	0x50: {
+		code:        0x50,
+		name:        "BVC", // Branch if Overflow Clear
+		mode:        "Relative",
+		description: "ステータスレジスタのVがクリアされている場合アドレス「PC + IM8」へジャンプ",
+		cycle:       2, // 2 (+1 if branch succeeds +2 if to a new page)
+		// Z: not affected
+		// N: not affected
+		// bytes:2
+	},
+	0x70: {
+		code:        0x70,
+		name:        "BVS", // Branch if Overflow Set
+		mode:        "Relative",
+		description: "ステータスレジスタのVがセットされている場合アドレス「PC + IM8」へジャンプ",
+		cycle:       2, // 2 (+1 if branch succeeds +2 if to a new page)
+		// Z: not affected
+		// N: not affected
+		// bytes:2
 	},
 	0x78: {
 		code:  0x78,

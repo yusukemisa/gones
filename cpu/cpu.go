@@ -15,10 +15,8 @@ type CPU struct {
 
 func NewCPU(bus *bus.Bus) *CPU {
 	cpu := &CPU{
-		register: &Register{
-			PC: 0x8000,
-		},
-		bus: bus,
+		register: &Register{},
+		bus:      bus,
 	}
 	return cpu
 }
@@ -43,7 +41,7 @@ type Register struct {
 	// 条件付きの分岐命令を実行するために演算結果を保持する
 	//bit	名称	詳細	            内容
 	//bit7	N	ネガティブ	    演算結果のbit7が1の時にセット
-	//bit6	V	オーバーフロー	P演算結果がオーバーフローを起こした時にセット
+	//bit6	V	オーバーフロー	演算結果がオーバーフローを起こした時にセット
 	//bit5	R	予約済み	        常にセットされている
 	//bit4	B	ブレークモード	BRK発生時にセット、IRQ発生時にクリア
 	//bit3	D	デシマルモード	0:デフォルト、1:BCDモード (未実装)
@@ -61,6 +59,15 @@ type instruction struct {
 	cycle       int
 }
 
+func (c *CPU) Reset() {
+	// 開始アドレスを取得しPCにセット
+	//l, h := uint16(c.read(0xFFFC)), uint16(c.read(0xFFFD))
+	//fmt.Printf("%#02x,%#02x\n", l, h)
+	//c.register.PC = l | h<<8
+	// なんかうまく行かないので固定で0x8000
+	c.register.PC = 0x8000
+}
+
 // Run is main processing in CPU
 func (c *CPU) Run() int {
 	code := c.fetch()
@@ -68,7 +75,6 @@ func (c *CPU) Run() int {
 	if !ok {
 		log.Fatalf("opecode not found:%#02x", code)
 	}
-	fmt.Printf("inst=%#v\n", inst)
 
 	c.exec(inst)
 	// 分岐でcycle数変わる場合があるのでexecが返した方が良い
@@ -82,7 +88,7 @@ func (c *CPU) fetch() byte {
 }
 
 func (c *CPU) exec(inst *instruction) {
-	//fmt.Printf("%#v, \n", inst)
+	fmt.Printf("%04X, %#v,\n", c.register.PC-1, inst)
 	switch inst.name {
 	case "NOP":
 	case "JMP":
@@ -90,6 +96,11 @@ func (c *CPU) exec(inst *instruction) {
 		c.register.PC = l | h<<8
 	case "JSR":
 		// 今のPCをスタックに退避し、PC=MI16にする
+		l, h := uint16(c.fetch()), uint16(c.fetch())
+		c.pushAddressToStack(c.register.PC - 1)
+		c.register.PC = l | h<<8
+	case "RTS":
+		// スタックから戻り番地を取得しPCに格納する
 		l, h := uint16(c.fetch()), uint16(c.fetch())
 		c.pushAddressToStack(c.register.PC - 1)
 		c.register.PC = l | h<<8
@@ -101,6 +112,17 @@ func (c *CPU) exec(inst *instruction) {
 		// IRQ割り込み禁止
 		// bit2を立てる
 		c.register.P = util.SetBit(c.register.P, 2)
+	case "BIT":
+		l, h := c.fetch(), byte(0x00)
+		addr := uint16(l | h<<8)
+		and := c.register.A & c.read(addr)
+		//fmt.Printf("l=%#02x, h=%#02x, addr=%#04x,and=%#02x, A=%#02x\n", l, h, addr, and, c.register.A)
+		if util.TestBit(and, 6) {
+			c.register.P = util.SetBit(c.register.P, 6)
+		} else {
+			c.register.P = util.ClearBit(c.register.P, 6)
+		}
+		c.updateStatusRegister(and)
 	case "LDX":
 		if inst.mode == "Immediate" {
 			c.register.X = c.fetch()
@@ -152,16 +174,44 @@ func (c *CPU) exec(inst *instruction) {
 		c.register.Y--
 		c.updateStatusRegister(c.register.Y)
 	case "BCS":
-		relAddr := int8(c.fetch())
-		if util.TestBit(c.register.P, 0) {
-			addr := int(relAddr) + int(c.register.PC)
-			c.register.PC = uint16(addr)
+		if inst.mode == "Relative" {
+			relAddr := int8(c.fetch())
+			if util.TestBit(c.register.P, 0) {
+				addr := int(relAddr) + int(c.register.PC)
+				c.register.PC = uint16(addr)
+			}
 		}
 	case "BCC":
-		relAddr := int8(c.fetch())
-		if !util.TestBit(c.register.P, 0) {
-			addr := int(relAddr) + int(c.register.PC)
-			c.register.PC = uint16(addr)
+		if inst.mode == "Relative" {
+			relAddr := int8(c.fetch())
+			if !util.TestBit(c.register.P, 0) {
+				addr := int(relAddr) + int(c.register.PC)
+				c.register.PC = uint16(addr)
+			}
+		}
+	case "BVS":
+		if inst.mode == "Relative" {
+			relAddr := int8(c.fetch())
+			if util.TestBit(c.register.P, 6) {
+				addr := int(relAddr) + int(c.register.PC)
+				c.register.PC = uint16(addr)
+			}
+		}
+	case "BVC":
+		if inst.mode == "Relative" {
+			relAddr := int8(c.fetch())
+			if !util.TestBit(c.register.P, 6) {
+				addr := int(relAddr) + int(c.register.PC)
+				c.register.PC = uint16(addr)
+			}
+		}
+	case "BPL":
+		if inst.mode == "Relative" {
+			relAddr := int8(c.fetch())
+			if !util.TestBit(c.register.P, 7) {
+				addr := int(relAddr) + int(c.register.PC)
+				c.register.PC = uint16(addr)
+			}
 		}
 	case "BNE":
 		if inst.mode == "Relative" {
@@ -199,7 +249,9 @@ func (c *CPU) read(address uint16) byte {
 // updateStatusRegister updates status register.
 // bit	名称	詳細	            内容
 // bit7	N	ネガティブ	    演算結果のbit7が1の時にセット
+// bit6	V	オーバーフロー  	演算結果がオーバーフローを起こした時にセット
 // bit1	Z	ゼロ	            演算結果が0の時にセット
+// TODO: 他のbitは0にも1にも更新しなくて良い？
 func (c *CPU) updateStatusRegister(result byte) {
 	// bit1	Z
 	if result == 0 {

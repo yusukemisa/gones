@@ -10,6 +10,69 @@ import (
 	"github.com/yusukemisa/gones/rom"
 )
 
+func TestCPU_memory(t *testing.T) {
+	t.Parallel()
+	for _, tt := range []struct {
+		opecode      byte
+		name         string
+		param        []byte
+		init         func(cpu *CPU)
+		wantRegister *Register
+		address      []uint16
+		wantData     []byte
+	}{
+		{
+			opecode: 0x20,
+			name:    "JSR",
+			param:   []byte{0x10, 0x80},
+			init: func(cpu *CPU) {
+				cpu.register.PC = 0x8000
+			},
+			wantRegister: &Register{
+				PC: 0x8010,
+				S:  0x01,
+			},
+			address:  []uint16{0x0100, 0x0101},
+			wantData: []byte{0x80, 0x02},
+		},
+		{
+			opecode: 0x60,
+			name:    "RTS",
+			param:   []byte{},
+			init: func(cpu *CPU) {
+				cpu.register.PC = 0x8100
+				cpu.pushAddressToStack(0x8010)
+			},
+			wantRegister: &Register{
+				PC: 0x8010,
+			},
+			address:  []uint16{0x0100, 0x0101},
+			wantData: []byte{0x80, 0x10},
+		},
+	} {
+		tt := tt
+		t.Run(fmt.Sprintf("code=%#02x:%s", tt.opecode, tt.name), func(t *testing.T) {
+			rom := &rom.Rom{PRG: tt.param}
+
+			cpu := NewCPU(bus.NewBus(rom, nil))
+			tt.init(cpu)
+
+			cpu.exec(opecodes[tt.opecode])
+			if diff := cmp.Diff(tt.wantRegister, cpu.register); diff != "" {
+				t.Errorf("register mismatch (-want +got):\n%s", diff)
+			}
+
+			if len(tt.address) != 0 {
+				for i, addr := range tt.address {
+					if diff := cmp.Diff(tt.wantData[i], cpu.read(addr)); diff != "" {
+						t.Errorf("memory data mismatch (-want +got):\n%s", diff)
+					}
+				}
+			}
+		})
+	}
+}
+
 func TestCPU_exec(t *testing.T) {
 	t.Parallel()
 	for _, tt := range []struct {
@@ -21,20 +84,6 @@ func TestCPU_exec(t *testing.T) {
 		address      uint16
 		wantData     byte
 	}{
-		{
-			opecode: 0x20,
-			name:    "JSR",
-			param:   []byte{0x10, 0x80},
-			orgRegister: &Register{
-				PC: 0x8000,
-			},
-			wantRegister: &Register{
-				PC: 0x8010,
-				S:  0x01,
-			},
-			address:  0x0100,
-			wantData: 0x80,
-		},
 		{
 			opecode:      0x4C,
 			name:         "JMP",

@@ -97,13 +97,11 @@ func (c *CPU) exec(inst *instruction) {
 	case "JSR":
 		// 今のPCをスタックに退避し、PC=MI16にする
 		l, h := uint16(c.fetch()), uint16(c.fetch())
-		c.pushAddressToStack(c.register.PC - 1)
+		c.pushAddressToStack(c.register.PC)
 		c.register.PC = l | h<<8
 	case "RTS":
 		// スタックから戻り番地を取得しPCに格納する
-		l, h := uint16(c.fetch()), uint16(c.fetch())
-		c.pushAddressToStack(c.register.PC - 1)
-		c.register.PC = l | h<<8
+		c.register.PC = c.popAddressFromStack()
 	case "SEC":
 		c.register.P = util.SetBit(c.register.P, 0)
 	case "CLC":
@@ -275,4 +273,11 @@ func (c *CPU) pushAddressToStack(address uint16) {
 	c.write(0x0100+uint16(c.register.S), byte(h))
 	c.register.S++
 	c.write(0x0100+uint16(c.register.S), byte(l))
+}
+
+func (c *CPU) popAddressFromStack() uint16 {
+	l := uint16(c.read(0x0100 + uint16(c.register.S)))
+	c.register.S--
+	h := uint16(c.read(0x0100 + uint16(c.register.S))) // l|h<<8
+	return l | h<<8
 }

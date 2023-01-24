@@ -43,6 +43,16 @@ var opecodes = map[byte]*instruction{
 		// N: not affected
 		// bytes:3
 	},
+	0x60: {
+		code:        0x60,
+		name:        "RTS", // Return from Subroutine
+		mode:        "Implied",
+		description: "サブルーチンから復帰",
+		cycle:       6,
+		// Z: not affected
+		// N: not affected
+		// bytes:1
+	},
 	0x24: {
 		code:        0x24,
 		name:        "BIT", // Bit Test

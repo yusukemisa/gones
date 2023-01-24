@@ -22,11 +22,48 @@ func TestCPU_exec(t *testing.T) {
 		wantData     byte
 	}{
 		{
+			opecode: 0x20,
+			name:    "JSR",
+			param:   []byte{0x10, 0x80},
+			orgRegister: &Register{
+				PC: 0x8000,
+			},
+			wantRegister: &Register{
+				PC: 0x8010,
+				S:  0x01,
+			},
+			address:  0x0100,
+			wantData: 0x80,
+		},
+		{
 			opecode:      0x4C,
 			name:         "JMP",
 			param:        []byte{0xFF, 0x80},
 			orgRegister:  &Register{PC: 0x8000},
 			wantRegister: &Register{PC: 0x80FF},
+		},
+		{
+			opecode: 0x18,
+			name:    "CLC",
+			param:   []byte{},
+			orgRegister: &Register{
+				PC: 0x8000,
+				P:  0b00000001,
+			},
+			wantRegister: &Register{
+				PC: 0x8000,
+				P:  0b00000000,
+			},
+		},
+		{
+			opecode:     0x38,
+			name:        "SEC",
+			param:       []byte{},
+			orgRegister: &Register{PC: 0x8000},
+			wantRegister: &Register{
+				PC: 0x8000,
+				P:  0b00000001,
+			},
 		},
 		{
 			opecode:     0x78,
@@ -38,6 +75,21 @@ func TestCPU_exec(t *testing.T) {
 				P:  0b00000100,
 			},
 		},
+		{
+			opecode: 0x24,
+			name:    "BIT", // TODO: 正しいか怪しい・・・
+			param:   []byte{0x01},
+			orgRegister: &Register{
+				PC: 0x8000,
+				A:  0b11111111,
+				P:  0b10100100,
+			},
+			wantRegister: &Register{
+				PC: 0x8001,
+				A:  0b1111_1111,
+				P:  0b00100110,
+			},
+		}, // 10100100
 		{
 			opecode:     0xA9,
 			name:        "LDA(set N)",
@@ -105,6 +157,38 @@ func TestCPU_exec(t *testing.T) {
 			},
 			address:  0x0003,
 			wantData: 0xAA,
+		},
+		{
+			opecode: 0x85, // Aの内容をアドレス「MI8 | 0x00<<8 」に書き込む.
+			name:    "STA_ZeroPage",
+			param:   []byte{0x03},
+			orgRegister: &Register{
+				PC: 0x8000,
+				A:  0xAA,
+			},
+			wantRegister: &Register{
+				A:  0xAA,
+				PC: 0x8001,
+				P:  0b00000000, //N,Z: not affected
+			},
+			address:  0x0003,
+			wantData: 0xAA,
+		},
+		{
+			opecode: 0x86, // Xの内容をアドレス「MI8 | 0x00<<8 」に書き込む.
+			name:    "STX_ZeroPage",
+			param:   []byte{0x86},
+			orgRegister: &Register{
+				PC: 0x8000,
+				X:  0xFF,
+			},
+			wantRegister: &Register{
+				X:  0xFF,
+				PC: 0x8001,
+				P:  0b00000000, //N,Z: not affected
+			},
+			address:  0x0086,
+			wantData: 0xFF,
 		},
 		{
 			opecode: 0x9A, // XをSへコピー
@@ -212,6 +296,110 @@ func TestCPU_exec(t *testing.T) {
 			},
 			wantRegister: &Register{
 				P:  0b11111111,
+				PC: 0x8001,
+			},
+		},
+		{
+			opecode: 0xB0, // キャリーフラグがセットされている場合アドレス「PC + IM8」へ分岐
+			name:    "BCS_branch",
+			param:   []byte{0x10},
+			orgRegister: &Register{
+				P:  0b11111111,
+				PC: 0x8000,
+			},
+			wantRegister: &Register{
+				P:  0b11111111,
+				PC: 0x8011,
+			},
+		},
+		{
+			opecode: 0xB0, // キャリーフラグがセットされている場合アドレス「PC + IM8」へ分岐
+			name:    "BCS_not_branch",
+			param:   []byte{0x10},
+			orgRegister: &Register{
+				P:  0b00000000,
+				PC: 0x8000,
+			},
+			wantRegister: &Register{
+				P:  0b00000000,
+				PC: 0x8001,
+			},
+		},
+		{
+			opecode: 0x90, // キャリーフラグがクリアされている場合アドレス「PC + IM8」へ分岐
+			name:    "BCC_branch",
+			param:   []byte{0x10},
+			orgRegister: &Register{
+				P:  0b00000000,
+				PC: 0x8000,
+			},
+			wantRegister: &Register{
+				P:  0b00000000,
+				PC: 0x8011,
+			},
+		},
+		{
+			opecode: 0x90,
+			name:    "BCC_not_branch",
+			param:   []byte{0x10},
+			orgRegister: &Register{
+				P:  0b11111111,
+				PC: 0x8000,
+			},
+			wantRegister: &Register{
+				P:  0b11111111,
+				PC: 0x8001,
+			},
+		},
+		{
+			opecode: 0xF0, // ステータスレジスタのZがクリアされている場合アドレス「PC + IM8」へジャンプ",
+			name:    "BEQ_Relative_branch",
+			param:   []byte{0x10},
+			orgRegister: &Register{
+				P:  0b0000_0010,
+				PC: 0x8000,
+			},
+			wantRegister: &Register{
+				P:  0b0000_0010,
+				PC: 0x8011,
+			},
+		},
+		{
+			opecode: 0xF0,
+			name:    "BEQ_Relative_not_branch",
+			param:   []byte{0x10},
+			orgRegister: &Register{
+				P:  0b0000_0000,
+				PC: 0x8000,
+			},
+			wantRegister: &Register{
+				P:  0b0000_0000,
+				PC: 0x8001,
+			},
+		},
+		{
+			opecode: 0x70, // ステータスレジスタのVがセットされている場合アドレス「PC + IM8」へジャンプ",
+			name:    "BVS_Relative_branch",
+			param:   []byte{0x10},
+			orgRegister: &Register{
+				P:  0b0100_0000,
+				PC: 0x8000,
+			},
+			wantRegister: &Register{
+				P:  0b0100_0000,
+				PC: 0x8011,
+			},
+		},
+		{
+			opecode: 0x70, // ステータスレジスタのVがセットされている場合アドレス「PC + IM8」へジャンプ",
+			name:    "BVS_Relative_not_branch",
+			param:   []byte{0x10},
+			orgRegister: &Register{
+				P:  0b0000_0000,
+				PC: 0x8000,
+			},
+			wantRegister: &Register{
+				P:  0b0000_0000,
 				PC: 0x8001,
 			},
 		},

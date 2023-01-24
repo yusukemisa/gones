@@ -45,6 +45,8 @@ func NewBus(rom *rom.Rom, ppu *ppu.PPU) *Bus {
 
 func (b *Bus) Read(address uint16) byte {
 	// 0x0000～0x07FF	0x0800	WRAM
+	// 0x0100～0x01FF   スタックポインタ
+
 	// 0x0800～0x0FFF	-	    WRAMのミラー1
 	// 0x1000～0x17FF	-	    WRAMのミラー2
 	// 0x1800～0x1FFF	-	    WRAMのミラー3

@@ -262,4 +262,15 @@ var opecodes = map[byte]*instruction{
 		// Z:Set if result = 0
 		// N:Set if bit 7 of result is set
 	},
+	0xF8: {
+		code:        0xF8, // Set Decimal Flag
+		name:        "SED",
+		mode:        "Implied",
+		description: "Set the decimal mode flag to one.",
+		cycle:       2,
+		// Z: not affected
+		// N: not affected
+		// D: Set to 1
+		// bytes:1
+	},
 }

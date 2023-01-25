@@ -26,6 +26,7 @@ func main() {
 }
 
 func run(cpu *cpu.CPU, ppu *ppu.PPU, joyPad *joypad.Joypad) {
+	cpu.Reset()
 	for {
 		cycle := cpu.Run()
 		if screen := ppu.Run(cycle * 3); screen != nil {

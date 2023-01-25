@@ -65,6 +65,24 @@ func TestCPU_memory(t *testing.T) {
 			address:  []uint16{0x0100},
 			wantData: []byte{0b0101_0101},
 		},
+		{
+			opecode: 0x68,
+			name:    "PLA", // スタックからAにpull
+			param:   []byte{},
+			init: func(cpu *CPU) {
+				cpu.register.PC = 0x8000
+				cpu.register.A = 0xFF
+				cpu.register.S = 0x10
+				cpu.pushByteToStack(0x20)
+			},
+			wantRegister: &Register{
+				PC: 0x8000,
+				A:  0x20,
+				S:  0x10,
+			},
+			address:  []uint16{0x0110},
+			wantData: []byte{0x20},
+		},
 	} {
 		tt := tt
 		t.Run(fmt.Sprintf("code=%#02x:%s", tt.opecode, tt.name), func(t *testing.T) {

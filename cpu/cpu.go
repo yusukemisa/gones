@@ -102,6 +102,10 @@ func (c *CPU) exec(inst *instruction) {
 	case "PHP":
 		// ステータスのコピーをスタックに退避
 		c.pushByteToStack(c.register.P)
+	case "PLA":
+		// スタックからAにPull
+		c.register.A = c.popByteFromStack()
+		c.updateStatusRegister(c.register.A)
 	case "RTS":
 		// スタックから戻り番地を取得しPCに格納する
 		c.register.PC = c.popAddressFromStack()
@@ -292,4 +296,10 @@ func (c *CPU) popAddressFromStack() uint16 {
 	c.register.S--
 	h := uint16(c.read(0x0100 + uint16(c.register.S))) // l|h<<8
 	return l | h<<8
+}
+
+func (c *CPU) popByteFromStack() byte {
+	b := c.read(0x0100 + uint16(c.register.S-1))
+	c.register.S--
+	return b
 }

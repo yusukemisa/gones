@@ -22,6 +22,16 @@ var opecodes = map[byte]*instruction{
 		// N: not affected
 		// bytes:1
 	},
+	0x68: {
+		code:        0x68,
+		name:        "PLA", // Pull Accumulator
+		mode:        "Implied",
+		description: "Pulls an 8 bit value from the stack and into the accumulator. The zero and negative flags are set as appropriate.",
+		cycle:       4,
+		// Z: Set if A = 0
+		// N: Set if bit 7 of A is set
+		// bytes:1
+	},
 	0x10: {
 		code:        0x10,
 		name:        "BPL", // Branch if Positive

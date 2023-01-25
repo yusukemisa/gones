@@ -63,6 +63,16 @@ var opecodes = map[byte]*instruction{
 		// N: not affected
 		// bytes:3
 	},
+	0x29: {
+		code:        0x29,
+		name:        "AND", // Logical AND
+		mode:        "Immediate",
+		description: "A logical AND is performed, bit by bit, on the accumulator contents using the contents of a byte of memory.",
+		cycle:       2,
+		// Z: Set if A = 0
+		// N: Set if bit 7 set
+		// bytes:2
+	},
 	0x60: {
 		code:        0x60,
 		name:        "RTS", // Return from Subroutine

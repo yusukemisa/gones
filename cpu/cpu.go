@@ -106,6 +106,9 @@ func (c *CPU) exec(inst *instruction) {
 		// スタックからAにPull
 		c.register.A = c.popByteFromStack()
 		c.updateStatusRegister(c.register.A)
+	case "AND":
+		c.register.A = c.register.A & c.fetch()
+		c.updateStatusRegister(c.register.A)
 	case "RTS":
 		// スタックから戻り番地を取得しPCに格納する
 		c.register.PC = c.popAddressFromStack()

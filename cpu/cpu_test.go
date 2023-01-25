@@ -126,6 +126,20 @@ func TestCPU_exec(t *testing.T) {
 			wantRegister: &Register{PC: 0x80FF},
 		},
 		{
+			opecode: 0x29,
+			name:    "AND",
+			param:   []byte{0b1111_0000},
+			orgRegister: &Register{
+				PC: 0x8000,
+				A:  0xFF,
+			},
+			wantRegister: &Register{
+				PC: 0x8001,
+				A:  0b1111_0000,
+				P:  0b10000000,
+			},
+		},
+		{
 			opecode: 0x18,
 			name:    "CLC",
 			param:   []byte{},

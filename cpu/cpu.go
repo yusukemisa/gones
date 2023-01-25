@@ -99,6 +99,9 @@ func (c *CPU) exec(inst *instruction) {
 		l, h := uint16(c.fetch()), uint16(c.fetch())
 		c.pushAddressToStack(c.register.PC)
 		c.register.PC = l | h<<8
+	case "PHP":
+		// ステータスのコピーをスタックに退避
+		c.pushByteToStack(c.register.P)
 	case "RTS":
 		// スタックから戻り番地を取得しPCに格納する
 		c.register.PC = c.popAddressFromStack()
@@ -270,6 +273,11 @@ func (c *CPU) updateStatusRegister(result byte) {
 		c.register.P = util.ClearBit(c.register.P, 7)
 	}
 	//fmt.Printf("result=%#02x,Z=%v,N=%v\n", result, testBit(c.register.P, 1), testBit(c.register.P, 7))
+}
+
+func (c *CPU) pushByteToStack(b byte) {
+	c.write(0x0100+uint16(c.register.S), b)
+	c.register.S++
 }
 
 func (c *CPU) pushAddressToStack(address uint16) {

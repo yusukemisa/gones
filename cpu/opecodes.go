@@ -12,6 +12,16 @@ var opecodes = map[byte]*instruction{
 		// N: not affected
 		// B: Set to 1
 	},
+	0x08: {
+		code:        0x08,
+		name:        "PHP", // Push Processor Status
+		mode:        "Implied",
+		description: "Pushes a copy of the status flags on to the stack.",
+		cycle:       3,
+		// Z: not affected
+		// N: not affected
+		// bytes:1
+	},
 	0x10: {
 		code:        0x10,
 		name:        "BPL", // Branch if Positive

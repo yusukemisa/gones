@@ -49,6 +49,22 @@ func TestCPU_memory(t *testing.T) {
 			address:  []uint16{0x0100, 0x0101},
 			wantData: []byte{0x80, 0x10},
 		},
+		{
+			opecode: 0x08,
+			name:    "PHP", // ステータスのコピーをスタックに退避
+			param:   []byte{},
+			init: func(cpu *CPU) {
+				cpu.register.PC = 0x8000
+				cpu.register.P = 0b0101_0101
+			},
+			wantRegister: &Register{
+				PC: 0x8000,
+				P:  0b0101_0101,
+				S:  0x01,
+			},
+			address:  []uint16{0x0100},
+			wantData: []byte{0b0101_0101},
+		},
 	} {
 		tt := tt
 		t.Run(fmt.Sprintf("code=%#02x:%s", tt.opecode, tt.name), func(t *testing.T) {

@@ -73,6 +73,17 @@ var opecodes = map[byte]*instruction{
 		// N: Set if bit 7 set
 		// bytes:2
 	},
+	0xC9: {
+		code:        0xC9,
+		name:        "CMP", // Compare
+		mode:        "Immediate",
+		description: "This instruction compares the contents of the accumulator with another memory held value and sets the zero and carry flags as appropriate.",
+		cycle:       2,
+		// C: Set if A >= M
+		// Z: Set if A = M
+		// N: Set if bit 7 of the result is set
+		// bytes:2
+	},
 	0x60: {
 		code:        0x60,
 		name:        "RTS", // Return from Subroutine

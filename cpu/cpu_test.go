@@ -140,6 +140,20 @@ func TestCPU_exec(t *testing.T) {
 			},
 		},
 		{
+			opecode: 0xC9,
+			name:    "CMP",
+			param:   []byte{0x01},
+			orgRegister: &Register{
+				PC: 0x8000,
+				A:  0x01,
+			},
+			wantRegister: &Register{
+				PC: 0x8001,
+				A:  0x01,
+				P:  0b00000011,
+			},
+		},
+		{
 			opecode: 0x18,
 			name:    "CLC",
 			param:   []byte{},

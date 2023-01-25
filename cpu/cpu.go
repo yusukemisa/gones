@@ -107,8 +107,18 @@ func (c *CPU) exec(inst *instruction) {
 		c.register.A = c.popByteFromStack()
 		c.updateStatusRegister(c.register.A)
 	case "AND":
-		c.register.A = c.register.A & c.fetch()
-		c.updateStatusRegister(c.register.A)
+		if inst.mode == "Immediate" {
+			c.register.A = c.register.A & c.fetch()
+			c.updateStatusRegister(c.register.A)
+		}
+	case "CMP":
+		if inst.mode == "Immediate" {
+			result := c.register.A - c.fetch()
+			if result >= 0 {
+				c.register.P = util.SetBit(c.register.P, 0)
+			}
+			c.updateStatusRegister(result)
+		}
 	case "RTS":
 		// スタックから戻り番地を取得しPCに格納する
 		c.register.PC = c.popAddressFromStack()

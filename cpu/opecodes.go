@@ -58,16 +58,6 @@ var opecodes = map[byte]*instruction{
 		// N: Set if bit 7 of A is set
 		// bytes:1
 	},
-	0x10: {
-		code:        0x10,
-		name:        "BPL", // Branch if Positive
-		mode:        "Relative",
-		description: "ステータスレジスタのNがクリアされている場合アドレス「PC + IM8」へジャンプ",
-		cycle:       2, // 2 (+1 if branch succeeds +2 if to a new page)
-		// Z: not affected
-		// N: not affected
-		// bytes:2
-	},
 	0x18: {
 		code:        0x18,
 		name:        "CLC", // Clear carry flag
@@ -149,6 +139,26 @@ var opecodes = map[byte]*instruction{
 		cycle:       3,
 		// Z: not affected
 		// N: not affected
+	},
+	0x10: {
+		code:        0x10,
+		name:        "BPL", // Branch if Positive
+		mode:        "Relative",
+		description: "ステータスレジスタのNがクリアされている場合アドレス「PC + IM8」へジャンプ",
+		cycle:       2, // 2 (+1 if branch succeeds +2 if to a new page)
+		// Z: not affected
+		// N: not affected
+		// bytes:2
+	},
+	0x30: {
+		code:        0x30,
+		name:        "BMI", // Branch if Minus
+		mode:        "Relative",
+		description: "ステータスレジスタのNがセットされている場合アドレス「PC + IM8」へジャンプ",
+		cycle:       2, // 2 (+1 if branch succeeds +2 if to a new page)
+		// Z: not affected
+		// N: not affected
+		// bytes:2
 	},
 	0x50: {
 		code:        0x50,

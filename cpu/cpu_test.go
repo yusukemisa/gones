@@ -575,6 +575,32 @@ func TestCPU_exec(t *testing.T) {
 				PC: 0x8001,
 			},
 		},
+		{
+			opecode: 0x30, // Branch if Minus
+			name:    "BMI_branch",
+			param:   []byte{0x10},
+			orgRegister: &Register{
+				P:  0b1000_0000,
+				PC: 0x8000,
+			},
+			wantRegister: &Register{
+				P:  0b1000_0000,
+				PC: 0x8011,
+			},
+		},
+		{
+			opecode: 0x10, // Branch if Positive
+			name:    "BPL_branch",
+			param:   []byte{0x10},
+			orgRegister: &Register{
+				P:  0b0000_0000,
+				PC: 0x8000,
+			},
+			wantRegister: &Register{
+				P:  0b0000_0000,
+				PC: 0x8011,
+			},
+		},
 	} {
 		tt := tt
 		t.Run(fmt.Sprintf("code=%#02x:%s", tt.opecode, tt.name), func(t *testing.T) {

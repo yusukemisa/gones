@@ -247,6 +247,14 @@ func (c *CPU) exec(inst *instruction) {
 				c.register.PC = uint16(addr)
 			}
 		}
+	case "BMI":
+		if inst.mode == "Relative" {
+			relAddr := int8(c.fetch())
+			if util.TestBit(c.register.P, 7) {
+				addr := int(relAddr) + int(c.register.PC)
+				c.register.PC = uint16(addr)
+			}
+		}
 	case "BNE":
 		if inst.mode == "Relative" {
 			// 分岐するしないに関係なくPCが2byte回る必要ある

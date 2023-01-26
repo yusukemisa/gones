@@ -68,6 +68,23 @@ func TestCPU_memory(t *testing.T) {
 			wantData: []byte{0b0101_0101},
 		},
 		{
+			opecode: 0x48,
+			name:    "PHA", // アキュムレーターのコピーをスタックに退避
+			param:   []byte{},
+			init: func(cpu *CPU) {
+				cpu.register.PC = 0x8000
+				cpu.register.A = 0x10
+				cpu.register.P = 0b0000_0000
+			},
+			wantRegister: &Register{
+				PC: 0x8000,
+				A:  0x10,
+				S:  0x01,
+			},
+			address:  []uint16{0x0100},
+			wantData: []byte{0x10},
+		},
+		{
 			opecode: 0x68,
 			name:    "PLA", // スタックからAにpull
 			param:   []byte{},

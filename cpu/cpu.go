@@ -104,6 +104,9 @@ func (c *CPU) exec(inst *instruction) {
 	case "PHP":
 		// ステータスのコピーをスタックに退避
 		c.pushByteToStack(c.register.P)
+	case "PHA":
+		// アキュムレーターのコピーをスタックに退避
+		c.pushByteToStack(c.register.A)
 	case "PLA":
 		// スタックからAにPull
 		c.register.A = c.popByteFromStack()

@@ -22,6 +22,16 @@ var opecodes = map[byte]*instruction{
 		// N: not affected
 		// bytes:1
 	},
+	0x48: {
+		code:        0x48,
+		name:        "PHA", // Push Accumulator
+		mode:        "Implied",
+		description: "Pushes a copy of the accumulator on to the stack.",
+		cycle:       3,
+		// Z: not affected
+		// N: not affected
+		// bytes:1
+	},
 	0x68: {
 		code:        0x68,
 		name:        "PLA", // Pull Accumulator

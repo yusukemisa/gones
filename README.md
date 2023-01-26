@@ -44,4 +44,4 @@ Hello World Rom is a sample rom distributed [here](http://hp.vector.co.jp/author
 - [6502 Instruction Reference](https://www.nesdev.org/obelisk-6502-guide/reference.html)
 - [Writing NES Emulator in Rust](https://bugzmanov.github.io/nes_ebook/)
 - [Writing NES Emulator in Rustをやった](https://zenn.dev/razokulover/articles/1191ca55f9f22e)
-- [GoのNES先駆者] https://github.com/fogleman/nes
+- [GoのNES先駆者](https://github.com/fogleman/nes)

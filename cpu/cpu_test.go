@@ -180,6 +180,19 @@ func TestCPU_exec(t *testing.T) {
 			},
 		},
 		{
+			opecode: 0xD8,
+			name:    "CLD",
+			param:   []byte{},
+			orgRegister: &Register{
+				PC: 0x8000,
+				P:  0b00001000,
+			},
+			wantRegister: &Register{
+				PC: 0x8000,
+				P:  0b00000000,
+			},
+		},
+		{
 			opecode:     0xF8,
 			name:        "SED",
 			param:       []byte{},

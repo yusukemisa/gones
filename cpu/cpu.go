@@ -128,6 +128,10 @@ func (c *CPU) exec(inst *instruction) {
 		c.register.P = util.SetBit(c.register.P, 0)
 	case "CLC":
 		c.register.P = util.ClearBit(c.register.P, 0)
+	case "CLD":
+		// デシマルモードをOFF
+		// bit3を消す
+		c.register.P = util.ClearBit(c.register.P, 3)
 	case "SED":
 		// デシマルモードをON
 		// bit3を立てる

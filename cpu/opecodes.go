@@ -303,6 +303,17 @@ var opecodes = map[byte]*instruction{
 		// Z:Set if result = 0
 		// N:Set if bit 7 of result is set
 	},
+	0xD8: {
+		code:        0xF8, // Clear Decimal Flag
+		name:        "CLD",
+		mode:        "Implied",
+		description: "Set the decimal mode flag to 0.",
+		cycle:       2,
+		// Z: not affected
+		// N: not affected
+		// D: Set to 0
+		// bytes:1
+	},
 	0xF8: {
 		code:        0xF8, // Set Decimal Flag
 		name:        "SED",

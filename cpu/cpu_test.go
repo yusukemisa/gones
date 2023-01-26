@@ -10,6 +10,106 @@ import (
 	"github.com/yusukemisa/gones/rom"
 )
 
+func TestCPU_memory(t *testing.T) {
+	t.Parallel()
+	for _, tt := range []struct {
+		opecode      byte
+		name         string
+		param        []byte
+		init         func(cpu *CPU)
+		wantRegister *Register
+		address      []uint16
+		wantData     []byte
+	}{
+		{
+			opecode: 0x20,
+			name:    "JSR",
+			param:   []byte{0x10, 0x80},
+			init: func(cpu *CPU) {
+				cpu.register.PC = 0x8000
+				cpu.register.P = 0b0000_0000
+			},
+			wantRegister: &Register{
+				PC: 0x8010,
+				S:  0x01,
+			},
+			address:  []uint16{0x0100, 0x0101},
+			wantData: []byte{0x80, 0x02},
+		},
+		{
+			opecode: 0x60,
+			name:    "RTS",
+			param:   []byte{},
+			init: func(cpu *CPU) {
+				cpu.register.PC = 0x8100
+				cpu.register.P = 0b0000_0000
+				cpu.pushAddressToStack(0x8010)
+			},
+			wantRegister: &Register{
+				PC: 0x8010,
+			},
+			address:  []uint16{0x0100, 0x0101},
+			wantData: []byte{0x80, 0x10},
+		},
+		{
+			opecode: 0x08,
+			name:    "PHP", // ステータスのコピーをスタックに退避
+			param:   []byte{},
+			init: func(cpu *CPU) {
+				cpu.register.PC = 0x8000
+				cpu.register.P = 0b0101_0101
+			},
+			wantRegister: &Register{
+				PC: 0x8000,
+				P:  0b0101_0101,
+				S:  0x01,
+			},
+			address:  []uint16{0x0100},
+			wantData: []byte{0b0101_0101},
+		},
+		{
+			opecode: 0x68,
+			name:    "PLA", // スタックからAにpull
+			param:   []byte{},
+			init: func(cpu *CPU) {
+				cpu.register.PC = 0x8000
+				cpu.register.A = 0xFF
+				cpu.register.P = 0b0000_0000
+				cpu.register.S = 0x10
+				cpu.pushByteToStack(0x20)
+			},
+			wantRegister: &Register{
+				PC: 0x8000,
+				A:  0x20,
+				S:  0x10,
+			},
+			address:  []uint16{0x0110},
+			wantData: []byte{0x20},
+		},
+	} {
+		tt := tt
+		t.Run(fmt.Sprintf("code=%#02x:%s", tt.opecode, tt.name), func(t *testing.T) {
+			rom := &rom.Rom{PRG: tt.param}
+
+			cpu := NewCPU(bus.NewBus(rom, nil))
+			tt.init(cpu)
+
+			cpu.exec(opecodes[tt.opecode])
+			if diff := cmp.Diff(tt.wantRegister, cpu.register); diff != "" {
+				t.Errorf("register mismatch (-want +got):\n%s", diff)
+			}
+
+			if len(tt.address) != 0 {
+				for i, addr := range tt.address {
+					if diff := cmp.Diff(tt.wantData[i], cpu.read(addr)); diff != "" {
+						t.Errorf("memory data mismatch (-want +got):\n%s", diff)
+					}
+				}
+			}
+		})
+	}
+}
+
 func TestCPU_exec(t *testing.T) {
 	t.Parallel()
 	for _, tt := range []struct {
@@ -22,25 +122,39 @@ func TestCPU_exec(t *testing.T) {
 		wantData     byte
 	}{
 		{
-			opecode: 0x20,
-			name:    "JSR",
-			param:   []byte{0x10, 0x80},
-			orgRegister: &Register{
-				PC: 0x8000,
-			},
-			wantRegister: &Register{
-				PC: 0x8010,
-				S:  0x01,
-			},
-			address:  0x0100,
-			wantData: 0x80,
-		},
-		{
 			opecode:      0x4C,
 			name:         "JMP",
 			param:        []byte{0xFF, 0x80},
 			orgRegister:  &Register{PC: 0x8000},
 			wantRegister: &Register{PC: 0x80FF},
+		},
+		{
+			opecode: 0x29,
+			name:    "AND",
+			param:   []byte{0b1111_0000},
+			orgRegister: &Register{
+				PC: 0x8000,
+				A:  0xFF,
+			},
+			wantRegister: &Register{
+				PC: 0x8001,
+				A:  0b1111_0000,
+				P:  0b10000000,
+			},
+		},
+		{
+			opecode: 0xC9,
+			name:    "CMP",
+			param:   []byte{0x01},
+			orgRegister: &Register{
+				PC: 0x8000,
+				A:  0x01,
+			},
+			wantRegister: &Register{
+				PC: 0x8001,
+				A:  0x01,
+				P:  0b00000011,
+			},
 		},
 		{
 			opecode: 0x18,
@@ -63,6 +177,16 @@ func TestCPU_exec(t *testing.T) {
 			wantRegister: &Register{
 				PC: 0x8000,
 				P:  0b00000001,
+			},
+		},
+		{
+			opecode:     0xF8,
+			name:        "SED",
+			param:       []byte{},
+			orgRegister: &Register{PC: 0x8000},
+			wantRegister: &Register{
+				PC: 0x8000,
+				P:  0b00001000,
 			},
 		},
 		{
@@ -352,7 +476,7 @@ func TestCPU_exec(t *testing.T) {
 			},
 		},
 		{
-			opecode: 0xF0, // ステータスレジスタのZがクリアされている場合アドレス「PC + IM8」へジャンプ",
+			opecode: 0xF0, // ステータスレジスタのZがセットされている場合アドレス「PC + IM8」へジャンプ",
 			name:    "BEQ_Relative_branch",
 			param:   []byte{0x10},
 			orgRegister: &Register{

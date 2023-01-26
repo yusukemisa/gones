@@ -12,6 +12,26 @@ var opecodes = map[byte]*instruction{
 		// N: not affected
 		// B: Set to 1
 	},
+	0x08: {
+		code:        0x08,
+		name:        "PHP", // Push Processor Status
+		mode:        "Implied",
+		description: "Pushes a copy of the status flags on to the stack.",
+		cycle:       3,
+		// Z: not affected
+		// N: not affected
+		// bytes:1
+	},
+	0x68: {
+		code:        0x68,
+		name:        "PLA", // Pull Accumulator
+		mode:        "Implied",
+		description: "Pulls an 8 bit value from the stack and into the accumulator. The zero and negative flags are set as appropriate.",
+		cycle:       4,
+		// Z: Set if A = 0
+		// N: Set if bit 7 of A is set
+		// bytes:1
+	},
 	0x10: {
 		code:        0x10,
 		name:        "BPL", // Branch if Positive
@@ -42,6 +62,37 @@ var opecodes = map[byte]*instruction{
 		// Z: not affected
 		// N: not affected
 		// bytes:3
+	},
+	0x29: {
+		code:        0x29,
+		name:        "AND", // Logical AND
+		mode:        "Immediate",
+		description: "A logical AND is performed, bit by bit, on the accumulator contents using the contents of a byte of memory.",
+		cycle:       2,
+		// Z: Set if A = 0
+		// N: Set if bit 7 set
+		// bytes:2
+	},
+	0xC9: {
+		code:        0xC9,
+		name:        "CMP", // Compare
+		mode:        "Immediate",
+		description: "This instruction compares the contents of the accumulator with another memory held value and sets the zero and carry flags as appropriate.",
+		cycle:       2,
+		// C: Set if A >= M
+		// Z: Set if A = M
+		// N: Set if bit 7 of the result is set
+		// bytes:2
+	},
+	0x60: {
+		code:        0x60,
+		name:        "RTS", // Return from Subroutine
+		mode:        "Implied",
+		description: "サブルーチンから復帰",
+		cycle:       6,
+		// Z: not affected
+		// N: not affected
+		// bytes:1
 	},
 	0x24: {
 		code:        0x24,
@@ -251,5 +302,16 @@ var opecodes = map[byte]*instruction{
 		cycle:       6,
 		// Z:Set if result = 0
 		// N:Set if bit 7 of result is set
+	},
+	0xF8: {
+		code:        0xF8, // Set Decimal Flag
+		name:        "SED",
+		mode:        "Implied",
+		description: "Set the decimal mode flag to one.",
+		cycle:       2,
+		// Z: not affected
+		// N: not affected
+		// D: Set to 1
+		// bytes:1
 	},
 }

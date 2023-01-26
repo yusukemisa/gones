@@ -15,8 +15,10 @@ type CPU struct {
 
 func NewCPU(bus *bus.Bus) *CPU {
 	cpu := &CPU{
-		register: &Register{},
-		bus:      bus,
+		register: &Register{
+			P: 0b0010_0000,
+		},
+		bus: bus,
 	}
 	return cpu
 }
@@ -97,17 +99,39 @@ func (c *CPU) exec(inst *instruction) {
 	case "JSR":
 		// 今のPCをスタックに退避し、PC=MI16にする
 		l, h := uint16(c.fetch()), uint16(c.fetch())
-		c.pushAddressToStack(c.register.PC - 1)
+		c.pushAddressToStack(c.register.PC)
 		c.register.PC = l | h<<8
+	case "PHP":
+		// ステータスのコピーをスタックに退避
+		c.pushByteToStack(c.register.P)
+	case "PLA":
+		// スタックからAにPull
+		c.register.A = c.popByteFromStack()
+		c.updateStatusRegister(c.register.A)
+	case "AND":
+		if inst.mode == "Immediate" {
+			c.register.A = c.register.A & c.fetch()
+			c.updateStatusRegister(c.register.A)
+		}
+	case "CMP":
+		if inst.mode == "Immediate" {
+			result := c.register.A - c.fetch()
+			if result >= 0 {
+				c.register.P = util.SetBit(c.register.P, 0)
+			}
+			c.updateStatusRegister(result)
+		}
 	case "RTS":
 		// スタックから戻り番地を取得しPCに格納する
-		l, h := uint16(c.fetch()), uint16(c.fetch())
-		c.pushAddressToStack(c.register.PC - 1)
-		c.register.PC = l | h<<8
+		c.register.PC = c.popAddressFromStack()
 	case "SEC":
 		c.register.P = util.SetBit(c.register.P, 0)
 	case "CLC":
 		c.register.P = util.ClearBit(c.register.P, 0)
+	case "SED":
+		// デシマルモードをON
+		// bit3を立てる
+		c.register.P = util.SetBit(c.register.P, 3)
 	case "SEI":
 		// IRQ割り込み禁止
 		// bit2を立てる
@@ -270,9 +294,27 @@ func (c *CPU) updateStatusRegister(result byte) {
 	//fmt.Printf("result=%#02x,Z=%v,N=%v\n", result, testBit(c.register.P, 1), testBit(c.register.P, 7))
 }
 
+func (c *CPU) pushByteToStack(b byte) {
+	c.write(0x0100+uint16(c.register.S), b)
+	c.register.S++
+}
+
 func (c *CPU) pushAddressToStack(address uint16) {
 	l, h := address&0x00FF, address>>8
 	c.write(0x0100+uint16(c.register.S), byte(h))
 	c.register.S++
 	c.write(0x0100+uint16(c.register.S), byte(l))
+}
+
+func (c *CPU) popAddressFromStack() uint16 {
+	l := uint16(c.read(0x0100 + uint16(c.register.S)))
+	c.register.S--
+	h := uint16(c.read(0x0100 + uint16(c.register.S))) // l|h<<8
+	return l | h<<8
+}
+
+func (c *CPU) popByteFromStack() byte {
+	b := c.read(0x0100 + uint16(c.register.S-1))
+	c.register.S--
+	return b
 }

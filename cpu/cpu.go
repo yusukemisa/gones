@@ -15,8 +15,10 @@ type CPU struct {
 
 func NewCPU(bus *bus.Bus) *CPU {
 	cpu := &CPU{
-		register: &Register{},
-		bus:      bus,
+		register: &Register{
+			P: 0b0010_0000,
+		},
+		bus: bus,
 	}
 	return cpu
 }

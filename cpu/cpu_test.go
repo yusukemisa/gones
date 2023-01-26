@@ -27,6 +27,7 @@ func TestCPU_memory(t *testing.T) {
 			param:   []byte{0x10, 0x80},
 			init: func(cpu *CPU) {
 				cpu.register.PC = 0x8000
+				cpu.register.P = 0b0000_0000
 			},
 			wantRegister: &Register{
 				PC: 0x8010,
@@ -41,6 +42,7 @@ func TestCPU_memory(t *testing.T) {
 			param:   []byte{},
 			init: func(cpu *CPU) {
 				cpu.register.PC = 0x8100
+				cpu.register.P = 0b0000_0000
 				cpu.pushAddressToStack(0x8010)
 			},
 			wantRegister: &Register{
@@ -72,6 +74,7 @@ func TestCPU_memory(t *testing.T) {
 			init: func(cpu *CPU) {
 				cpu.register.PC = 0x8000
 				cpu.register.A = 0xFF
+				cpu.register.P = 0b0000_0000
 				cpu.register.S = 0x10
 				cpu.pushByteToStack(0x20)
 			},
@@ -473,7 +476,7 @@ func TestCPU_exec(t *testing.T) {
 			},
 		},
 		{
-			opecode: 0xF0, // ステータスレジスタのZがクリアされている場合アドレス「PC + IM8」へジャンプ",
+			opecode: 0xF0, // ステータスレジスタのZがセットされている場合アドレス「PC + IM8」へジャンプ",
 			name:    "BEQ_Relative_branch",
 			param:   []byte{0x10},
 			orgRegister: &Register{

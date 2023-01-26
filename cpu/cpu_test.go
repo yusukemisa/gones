@@ -31,7 +31,7 @@ func TestCPU_memory(t *testing.T) {
 			},
 			wantRegister: &Register{
 				PC: 0x8010,
-				S:  0x01,
+				S:  0x02,
 			},
 			address:  []uint16{0x0100, 0x0101},
 			wantData: []byte{0x80, 0x02},
@@ -68,6 +68,23 @@ func TestCPU_memory(t *testing.T) {
 			wantData: []byte{0b0101_0101},
 		},
 		{
+			opecode: 0x48,
+			name:    "PHA", // アキュムレーターのコピーをスタックに退避
+			param:   []byte{},
+			init: func(cpu *CPU) {
+				cpu.register.PC = 0x8000
+				cpu.register.A = 0x10
+				cpu.register.P = 0b0000_0000
+			},
+			wantRegister: &Register{
+				PC: 0x8000,
+				A:  0x10,
+				S:  0x01,
+			},
+			address:  []uint16{0x0100},
+			wantData: []byte{0x10},
+		},
+		{
 			opecode: 0x68,
 			name:    "PLA", // スタックからAにpull
 			param:   []byte{},
@@ -85,6 +102,24 @@ func TestCPU_memory(t *testing.T) {
 			},
 			address:  []uint16{0x0110},
 			wantData: []byte{0x20},
+		},
+		{
+			opecode: 0x28,
+			name:    "PLP", // スタックからPにpull
+			param:   []byte{},
+			init: func(cpu *CPU) {
+				cpu.register.PC = 0x8000
+				cpu.register.P = 0b0000_0000
+				cpu.register.S = 0x10
+				cpu.pushByteToStack(0b1111_0000)
+			},
+			wantRegister: &Register{
+				PC: 0x8000,
+				P:  0b1111_0000,
+				S:  0x10,
+			},
+			address:  []uint16{0x0110},
+			wantData: []byte{0b1111_0000},
 		},
 	} {
 		tt := tt
@@ -177,6 +212,19 @@ func TestCPU_exec(t *testing.T) {
 			wantRegister: &Register{
 				PC: 0x8000,
 				P:  0b00000001,
+			},
+		},
+		{
+			opecode: 0xD8,
+			name:    "CLD",
+			param:   []byte{},
+			orgRegister: &Register{
+				PC: 0x8000,
+				P:  0b00001000,
+			},
+			wantRegister: &Register{
+				PC: 0x8000,
+				P:  0b00000000,
 			},
 		},
 		{
@@ -525,6 +573,32 @@ func TestCPU_exec(t *testing.T) {
 			wantRegister: &Register{
 				P:  0b0000_0000,
 				PC: 0x8001,
+			},
+		},
+		{
+			opecode: 0x30, // Branch if Minus
+			name:    "BMI_branch",
+			param:   []byte{0x10},
+			orgRegister: &Register{
+				P:  0b1000_0000,
+				PC: 0x8000,
+			},
+			wantRegister: &Register{
+				P:  0b1000_0000,
+				PC: 0x8011,
+			},
+		},
+		{
+			opecode: 0x10, // Branch if Positive
+			name:    "BPL_branch",
+			param:   []byte{0x10},
+			orgRegister: &Register{
+				P:  0b0000_0000,
+				PC: 0x8000,
+			},
+			wantRegister: &Register{
+				P:  0b0000_0000,
+				PC: 0x8011,
 			},
 		},
 	} {

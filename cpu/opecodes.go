@@ -22,6 +22,32 @@ var opecodes = map[byte]*instruction{
 		// N: not affected
 		// bytes:1
 	},
+	0x28: {
+		code: 0x28,
+		name: "PLP", // Pull Processor Status
+		mode: "Implied",
+		description: "Pulls an 8 bit value from the stack and into the processor flags. " +
+			"The flags will take on new states as determined by the value pulled.",
+		cycle: 4,
+		// C: Set from stack
+		// Z: Set from stack
+		// I: Set from stack
+		// D: Set from stack
+		// B: Set from stack
+		// V: Set from stack
+		// N: Set from stack
+		// bytes:1
+	},
+	0x48: {
+		code:        0x48,
+		name:        "PHA", // Push Accumulator
+		mode:        "Implied",
+		description: "Pushes a copy of the accumulator on to the stack.",
+		cycle:       3,
+		// Z: not affected
+		// N: not affected
+		// bytes:1
+	},
 	0x68: {
 		code:        0x68,
 		name:        "PLA", // Pull Accumulator
@@ -31,16 +57,6 @@ var opecodes = map[byte]*instruction{
 		// Z: Set if A = 0
 		// N: Set if bit 7 of A is set
 		// bytes:1
-	},
-	0x10: {
-		code:        0x10,
-		name:        "BPL", // Branch if Positive
-		mode:        "Relative",
-		description: "ステータスレジスタのNがクリアされている場合アドレス「PC + IM8」へジャンプ",
-		cycle:       2, // 2 (+1 if branch succeeds +2 if to a new page)
-		// Z: not affected
-		// N: not affected
-		// bytes:2
 	},
 	0x18: {
 		code:        0x18,
@@ -123,6 +139,26 @@ var opecodes = map[byte]*instruction{
 		cycle:       3,
 		// Z: not affected
 		// N: not affected
+	},
+	0x10: {
+		code:        0x10,
+		name:        "BPL", // Branch if Positive
+		mode:        "Relative",
+		description: "ステータスレジスタのNがクリアされている場合アドレス「PC + IM8」へジャンプ",
+		cycle:       2, // 2 (+1 if branch succeeds +2 if to a new page)
+		// Z: not affected
+		// N: not affected
+		// bytes:2
+	},
+	0x30: {
+		code:        0x30,
+		name:        "BMI", // Branch if Minus
+		mode:        "Relative",
+		description: "ステータスレジスタのNがセットされている場合アドレス「PC + IM8」へジャンプ",
+		cycle:       2, // 2 (+1 if branch succeeds +2 if to a new page)
+		// Z: not affected
+		// N: not affected
+		// bytes:2
 	},
 	0x50: {
 		code:        0x50,
@@ -302,6 +338,17 @@ var opecodes = map[byte]*instruction{
 		cycle:       6,
 		// Z:Set if result = 0
 		// N:Set if bit 7 of result is set
+	},
+	0xD8: {
+		code:        0xF8, // Clear Decimal Flag
+		name:        "CLD",
+		mode:        "Implied",
+		description: "Set the decimal mode flag to 0.",
+		cycle:       2,
+		// Z: not affected
+		// N: not affected
+		// D: Set to 0
+		// bytes:1
 	},
 	0xF8: {
 		code:        0xF8, // Set Decimal Flag

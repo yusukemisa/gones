@@ -101,6 +101,9 @@ func (c *CPU) exec(inst *instruction) {
 		l, h := uint16(c.fetch()), uint16(c.fetch())
 		c.pushAddressToStack(c.register.PC)
 		c.register.PC = l | h<<8
+	case "RTS":
+		// スタックから戻り番地を取得しPCに格納する
+		c.register.PC = c.popAddressFromStack()
 	case "PHP":
 		// ステータスのコピーをスタックに退避
 		c.pushByteToStack(c.register.P)
@@ -127,9 +130,6 @@ func (c *CPU) exec(inst *instruction) {
 			}
 			c.updateStatusRegister(result)
 		}
-	case "RTS":
-		// スタックから戻り番地を取得しPCに格納する
-		c.register.PC = c.popAddressFromStack()
 	case "SEC":
 		c.register.P = util.SetBit(c.register.P, 0)
 	case "CLC":
@@ -319,15 +319,19 @@ func (c *CPU) pushByteToStack(b byte) {
 
 func (c *CPU) pushAddressToStack(address uint16) {
 	l, h := address&0x00FF, address>>8
-	c.write(0x0100+uint16(c.register.S), byte(h))
 	c.register.S++
-	c.write(0x0100+uint16(c.register.S), byte(l))
+	c.write(0x00FF+uint16(c.register.S), byte(h))
+	c.register.S++
+	c.write(0x00FF+uint16(c.register.S), byte(l))
+	//fmt.Printf("pushAddressToStack:S=%#02x,l=%#02x,h=%#02x\n", c.register.S, l, h)
 }
 
 func (c *CPU) popAddressFromStack() uint16 {
-	l := uint16(c.read(0x0100 + uint16(c.register.S)))
+	l := uint16(c.read(0x00FF + uint16(c.register.S)))
 	c.register.S--
-	h := uint16(c.read(0x0100 + uint16(c.register.S))) // l|h<<8
+	h := uint16(c.read(0x00FF + uint16(c.register.S))) // l|h<<8
+	c.register.S--
+	//fmt.Printf("popAddressFromStack:S=%#02x,l=%#02x,h=%#02x\n", c.register.S, l, h)
 	return l | h<<8
 }
 

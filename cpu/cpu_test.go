@@ -31,7 +31,7 @@ func TestCPU_memory(t *testing.T) {
 			},
 			wantRegister: &Register{
 				PC: 0x8010,
-				S:  0x01,
+				S:  0x02,
 			},
 			address:  []uint16{0x0100, 0x0101},
 			wantData: []byte{0x80, 0x02},

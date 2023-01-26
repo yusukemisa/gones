@@ -111,6 +111,9 @@ func (c *CPU) exec(inst *instruction) {
 		// スタックからAにPull
 		c.register.A = c.popByteFromStack()
 		c.updateStatusRegister(c.register.A)
+	case "PLP":
+		// スタックからPにPull
+		c.register.P = c.popByteFromStack()
 	case "AND":
 		if inst.mode == "Immediate" {
 			c.register.A = c.register.A & c.fetch()

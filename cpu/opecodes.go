@@ -22,6 +22,22 @@ var opecodes = map[byte]*instruction{
 		// N: not affected
 		// bytes:1
 	},
+	0x28: {
+		code: 0x28,
+		name: "PLP", // Pull Processor Status
+		mode: "Implied",
+		description: "Pulls an 8 bit value from the stack and into the processor flags. " +
+			"The flags will take on new states as determined by the value pulled.",
+		cycle: 4,
+		// C: Set from stack
+		// Z: Set from stack
+		// I: Set from stack
+		// D: Set from stack
+		// B: Set from stack
+		// V: Set from stack
+		// N: Set from stack
+		// bytes:1
+	},
 	0x48: {
 		code:        0x48,
 		name:        "PHA", // Push Accumulator

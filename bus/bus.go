@@ -4,15 +4,20 @@ import (
 	"fmt"
 
 	"github.com/yusukemisa/gones/joypad"
-	"github.com/yusukemisa/gones/ppu"
 	"github.com/yusukemisa/gones/rom"
 )
+
+// PPUInterface defines the interface for PPU operations
+type PPUInterface interface {
+	ReadRegister(addr uint16) byte
+	WriteRegister(addr uint16, data byte)
+}
 
 // Bus is a wire between CPU and RAM.
 // Three buses are connected from CPU to RAM.
 // Physically a wire is essential, but as an emulator program it is not necessary to implement it,
 // because it can be used to access memory in the CPU structure.
-// But it’s useful to keep the code clean.
+// But it's useful to keep the code clean.
 type Bus struct {
 	// memory map
 	// Address          Size    Usage
@@ -29,12 +34,12 @@ type Bus struct {
 	// 0xC000～0xFFFF	0x4000	PRG-ROM
 	cpuRAM []byte // 11bit = 2048 = 0x0800
 	rom    *rom.Rom
-	ppu    *ppu.PPU
+	ppu    PPUInterface
 
 	joyPad1 *joypad.Joypad
 }
 
-func NewBus(rom *rom.Rom, ppu *ppu.PPU) *Bus {
+func NewBus(rom *rom.Rom, ppu PPUInterface) *Bus {
 	return &Bus{
 		cpuRAM:  make([]byte, 0x0800),
 		ppu:     ppu,
@@ -44,42 +49,25 @@ func NewBus(rom *rom.Rom, ppu *ppu.PPU) *Bus {
 }
 
 func (b *Bus) Read(address uint16) byte {
-	// 0x0000～0x07FF	0x0800	WRAM
-	// 0x0100～0x01FF   スタックポインタ
-
-	// 0x0800～0x0FFF	-	    WRAMのミラー1
-	// 0x1000～0x17FF	-	    WRAMのミラー2
-	// 0x1800～0x1FFF	-	    WRAMのミラー3
-	if 0 <= address && address < 0x2000 {
-		mirrorDownAddress := address & 0b0000_0111_1111_1111
-		return b.cpuRAM[mirrorDownAddress]
-	}
-	// 0x2000～0x2007	0x0008	PPU レジスタ
-	// 0x2008～0x3FFF	-	    PPUレジスタのミラー
-	if 0x2000 <= address && address < 0x4000 {
-		switch address {
-		case 0x2007:
-			return b.ppu.Read()
+	switch {
+	case address >= 0x0000 && address <= 0x1FFF:
+		return b.cpuRAM[address&0x07FF] // Mirror down 0x0800 bytes to 0x0000-0x07FF
+	case address >= 0x2000 && address <= 0x3FFF:
+		return b.ppu.ReadRegister(0x2000 + (address & 0x7))
+	case address >= 0x8000 && address <= 0xFFFF:
+		// PRG-ROM mirroring
+		prgAddr := address - 0x8000
+		if b.rom.PRGSize == 0x4000 && address >= 0xC000 {
+			// If PRG-ROM is 16KB, mirror 0x8000-0xBFFF to 0xC000-0xFFFF
+			prgAddr = prgAddr & 0x3FFF
 		}
+		if address == 0xFFFC || address == 0xFFFD {
+			fmt.Printf("Reading Reset Vector at %04x: %02x\n", address, b.rom.ReadPRG(prgAddr))
+		}
+		return b.rom.ReadPRG(prgAddr)
+	default:
 		return 0
 	}
-	// 1P JoyPad
-	if address == 0x4016 {
-		return b.joyPad1.Read()
-	}
-	// 2P JoyPad
-	if address == 0x4017 {
-		// TODO
-		return 0
-	}
-	// 0x8000～0xBFFF	0x4000	PRG-ROM
-	// 0xC000～0xFFFF	0x4000	PRG-ROM
-	if 0x8000 <= address && address < 0xFFFF {
-		address -= 0x8000
-		mirrorDownAddress := address & 0b0011_1111_1111_1111
-		return b.rom.ReadPRG(mirrorDownAddress)
-	}
-	return 0
 }
 
 func (b *Bus) Write(address uint16, data byte) {
@@ -89,17 +77,18 @@ func (b *Bus) Write(address uint16, data byte) {
 		return
 	}
 	if 0x2000 <= address && address < 0x4000 {
+		fmt.Printf("Bus Write to PPU Register: addr=%04x, data=%02x\n", address, data)
 		switch address {
 		case 0x2000:
-			b.ppu.WriteControl(data)
+			b.ppu.WriteRegister(address, data)
 		case 0x2001:
-			b.ppu.WriteMask(data)
+			b.ppu.WriteRegister(address, data)
 		case 0x2005:
-			b.ppu.WriteScroll(data)
+			b.ppu.WriteRegister(address, data)
 		case 0x2006:
-			b.ppu.WriteAddress(data)
+			b.ppu.WriteRegister(address, data)
 		case 0x2007:
-			b.ppu.WriteData(data)
+			b.ppu.WriteRegister(address, data)
 		default:
 			mirrorDownAddress := address & 0b0010_0000_0000_0111
 			//fmt.Printf("mirrorDownAddress:%#04x,%#04x\n", mirrorDownAddress, address)
@@ -114,4 +103,14 @@ func (b *Bus) Write(address uint16, data byte) {
 		panic(fmt.Sprintf("attempt to write to PRG rom:%#04v", address))
 	}
 	fmt.Printf("unexpected memory addresses=%#04v, data=%#02x\n", address, data)
+}
+
+// SetPPUはPPUを更新する
+func (b *Bus) SetPPU(ppu PPUInterface) {
+	b.ppu = ppu
+}
+
+// UpdatePPUはPPUを更新する
+func (b *Bus) UpdatePPU(ppu PPUInterface) {
+	b.ppu = ppu
 }

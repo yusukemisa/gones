@@ -47,7 +47,7 @@ func TestBus_Write(t *testing.T) {
 	} {
 		tt := tt
 		t.Run(fmt.Sprintf("Write:address=%#04x,data=%#02x", tt.address, tt.data), func(t *testing.T) {
-			bus := NewBus(nil, ppu.NewPPU([]byte{}, true))
+			bus := NewBus(nil, ppu.NewPPU([]byte{}, true, false, nil))
 			if want, got := byte(0), bus.Read(tt.address); want != got {
 				t.Errorf("want=%v, got=%v", want, got)
 			}

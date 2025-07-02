@@ -11,14 +11,18 @@ import (
 type CPU struct {
 	register *Register
 	bus      *bus.Bus
+	pc       uint16
+	nmi      bool
+	debug    bool
 }
 
-func NewCPU(bus *bus.Bus) *CPU {
+func NewCPU(bus *bus.Bus, debug bool) *CPU {
 	cpu := &CPU{
 		register: &Register{
 			P: 0b0010_0000,
 		},
-		bus: bus,
+		bus:   bus,
+		debug: debug,
 	}
 	return cpu
 }
@@ -62,24 +66,36 @@ type instruction struct {
 }
 
 func (c *CPU) Reset() {
-	// 開始アドレスを取得しPCにセット
-	//l, h := uint16(c.read(0xFFFC)), uint16(c.read(0xFFFD))
-	//fmt.Printf("%#02x,%#02x\n", l, h)
-	//c.register.PC = l | h<<8
-	// なんかうまく行かないので固定で0x8000
-	c.register.PC = 0x8000
+	// リセットベクタ（0xFFFC-0xFFFD）から開始アドレスを読み込む
+	l := uint16(c.bus.Read(0xFFFC))
+	h := uint16(c.bus.Read(0xFFFD))
+	if c.debug {
+		fmt.Printf("Reading Reset Vector at fffc: %02x\n", l)
+		fmt.Printf("Reading Reset Vector at fffd: %02x\n", h)
+		fmt.Printf("Reset Vector: low=%02x, high=%02x\n", l, h)
+	}
+	c.register.PC = (h << 8) | l
+	c.register.S = 0xFF // スタックポインタを初期化
+	c.register.P = 0x34 // 割り込み禁止フラグとブレークフラグを設定
+
+	if c.debug {
+		fmt.Printf("CPU Reset: PC=%04x\n", c.register.PC)
+	}
 }
 
 // Run is main processing in CPU
 func (c *CPU) Run() int {
 	code := c.fetch()
+	if c.debug {
+		//fmt.Printf("CPU: PC=%04x, opcode=%02x\n", c.register.PC, code)
+	}
+
 	inst, ok := opecodes[code]
 	if !ok {
 		log.Fatalf("opecode not found:%#02x", code)
 	}
 
 	c.exec(inst)
-	// 分岐でcycle数変わる場合があるのでexecが返した方が良い
 	return inst.cycle
 }
 
@@ -90,7 +106,7 @@ func (c *CPU) fetch() byte {
 }
 
 func (c *CPU) exec(inst *instruction) {
-	fmt.Printf("%04X, %#v,\n", c.register.PC-1, inst)
+	// fmt.Printf("%04X, %#v,\n", c.register.PC-1, inst)
 	switch inst.name {
 	case "NOP":
 	case "JMP":
@@ -274,6 +290,21 @@ func (c *CPU) exec(inst *instruction) {
 				c.register.PC = uint16(addr)
 			}
 		}
+	case "BRK":
+		// PCをインクリメント
+		c.register.PC++
+
+		// PCとステータスレジスタをスタックにプッシュ
+		c.pushAddressToStack(c.register.PC)
+		c.pushByteToStack(c.register.P | 0x10) // ブレークフラグを設定
+
+		// 割り込みベクタ（0xFFFE-0xFFFF）からアドレスを読み込む
+		l := uint16(c.bus.Read(0xFFFE))
+		h := uint16(c.bus.Read(0xFFFF))
+		c.register.PC = l | h<<8
+
+		// 割り込み禁止フラグを設定
+		c.register.P = util.SetBit(c.register.P, 2)
 	default:
 		fmt.Printf("unknown code:%#v\n", inst)
 	}
@@ -339,4 +370,18 @@ func (c *CPU) popByteFromStack() byte {
 	b := c.read(0x0100 + uint16(c.register.S-1))
 	c.register.S--
 	return b
+}
+
+// TriggerNMIはNMI割り込みを発生させる
+func (c *CPU) TriggerNMI() {
+	// 現在のPCをスタックに退避
+	c.pushAddressToStack(c.register.PC)
+	// ステータスレジスタをスタックに退避
+	c.pushByteToStack(c.register.P)
+	// 割り込み禁止フラグを設定
+	c.register.P = util.SetBit(c.register.P, 2)
+	// NMIベクタ（0xFFFA-0xFFFB）から割り込みハンドラのアドレスを読み込む
+	l := uint16(c.bus.Read(0xFFFA))
+	h := uint16(c.bus.Read(0xFFFB))
+	c.register.PC = (h << 8) | l
 }
